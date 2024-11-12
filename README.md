@@ -1,40 +1,38 @@
 
 # Table of Contents
 
-1.  [RSS LXC Containers](#orgcab5220)
-    1.  [TSC setup](#org9ddc69d)
-        1.  [TSC LXC initial setup](#orgeb34a36)
-        2.  [TSC packages installation.](#org0a8ed8d)
-    2.  [TPCC setup](#org1654d34)
+1.  [RSS LXC Containers](#org0cfdd63)
+    1.  [DEBIAN-11 setup](#org3dc6999)
+        1.  [DEBIAN-11 LXC initial setup](#orgb6d7d44)
+        2.  [DEBIAN-11 packages installation.](#orgf00c013)
 
 
-<a id="orgcab5220"></a>
+<a id="org0cfdd63"></a>
 
 # RSS LXC Containers
 
 This note contains some recipes for creating and configuring LXC containers to
 run:
 
-1.  TSC.
-2.  TPCC.
+1.  DEBIAN-11.
 
 
-<a id="org9ddc69d"></a>
+<a id="org3dc6999"></a>
 
-## TSC setup
+## DEBIAN-11 setup
 
-We split the TSC set up in three stages, each one with its own ansible playbook:
+We split the DEBIAN-11 set up in three stages, each one with its own ansible playbook:
 
-1.  [TSC lxc playbook](#orgc87fb28)
+1.  [DEBIAN-11 lxc playbook](#orgdcd54ca)
 2.  TODO:
 3.  TODO:
 
 
-<a id="orgeb34a36"></a>
+<a id="orgb6d7d44"></a>
 
-### TSC LXC initial setup
+### DEBIAN-11 LXC initial setup
 
-Below re the tasks as well as some tips about how to provision a TSC using LXC
+Below re the tasks as well as some tips about how to provision a DEBIAN-11 using LXC
 
 1.  How to create a LXC debian bookworm container in debian:
 
@@ -47,19 +45,19 @@ Below re the tasks as well as some tips about how to provision a TSC using LXC
     
     2.  **Create a directory for your container**:
         
-            sudo mkdir -p /var/lib/lxc/TSC-1
+            sudo mkdir -p /var/lib/lxc/DEBIAN-11
     
     3.  **Create the container**:
         
-            sudo lxc-create --name TSC-1 --template download -- --dist debian --release bookworm --arch amd64
+            sudo lxc-create --name DEBIAN-11 --template download -- --dist debian --release bookworm --arch amd64
     
     4.  **Start the container**:
         
-            sudo lxc-start -n TSC-1
+            sudo lxc-start -n DEBIAN-11
     
     5.  **Access the container’s shell**:
         
-            sudo lxc-attach -n TSC-1
+            sudo lxc-attach -n DEBIAN-11
     
     You now have a running Debian Bookworm container!
 
@@ -69,20 +67,20 @@ Below re the tasks as well as some tips about how to provision a TSC using LXC
     
     1.  **Stop the container** (if it is running):
         
-            sudo lxc-stop -n TSC-1
+            sudo lxc-stop -n DEBIAN-11
     
     2.  **Delete the container**:
         
-            sudo lxc-destroy -n TSC-1
+            sudo lxc-destroy -n DEBIAN-11
     
-    After these commands, the `TSC-1` LXC container will be removed from your
+    After these commands, the `DEBIAN-11` LXC container will be removed from your
     system.
 
 3.  How to make the container to get same ip address every start:
 
     To assign a static IP address to your LXC container, you can follow these steps:
     
-    1.  Stop TSC-1 container
+    1.  Stop DEBIAN-11 container
     2.  Uncomment the line "LXC<sub>DHCP</sub><sub>CONFILE</sub>=/etc/dnsmasq.conf"
     3.  as root in the server machine do
         
@@ -105,15 +103,15 @@ Below re the tasks as well as some tips about how to provision a TSC using LXC
 
 5.  **Ansible** playbook that performs all previous task on host tsc-host-1.
 
-    Below there is an Ansible playbook that sets up the TSC-1 container (lxc) on the
+    Below there is an Ansible playbook that sets up the DEBIAN-11 container (lxc) on the
     host **tsc-host-1**, performing all the tasks you've outlined:
     
         ---
-        - name: Set up LXC container for a TSC
+        - name: Set up LXC container for a DEBIAN-11
           hosts: uberrimus # here should be tsc-host-1 instead
           become: yes
           #vars:
-          #  DEST: TSC-1  # remove this line if "--extra-vars "DEST=TSC-1" is passed when calling ansible-playbook
+          #  DEST: DEBIAN-11  # remove this line if "--extra-vars "DEST=DEBIAN-11" is passed when calling ansible-playbook
         
           tasks:
             - name: Install LXC
@@ -323,7 +321,6 @@ Below re the tasks as well as some tips about how to provision a TSC using LXC
             - name: Create dir /home/concesion/.ssh
               command: lxc-attach -n {{ DEST }} -- bash -c "mkdir -p /home/concesion/.ssh; chown -R concesion:concesion /home/concesion/.ssh"
         
-        
             - name: Get list of SSH shared keys
               shell: "find {{ playbook_dir }}/ssh-keys/shared -name 'id_rsa_lxc*'"
               register: ssh_shared_keys_files
@@ -383,7 +380,13 @@ Below re the tasks as well as some tips about how to provision a TSC using LXC
     
     1.  Notes:
     
-        1.  `Ensure you have =ansible` installed and configured on your control
+        1.  Clonar el repositorio con la configuración de ansible
+            
+                # this file is ansible.cfg in the root of the project
+                git clone https://github.com/ceblan/Howto-LXC.git
+                cd Howto-LXC
+        
+        2.  `Ensure you have =ansible` installed and configured on your control
             machine. It's recommended to have ssh keys to access the hosts and guests.
             
                 # this file is ansible.cfg in the root of the project
@@ -392,113 +395,97 @@ Below re the tasks as well as some tips about how to provision a TSC using LXC
                 private_key_file = ~/.ssh/id_rsa_lxc # create thix key for the project
                 remote_user = concesion
         
-        2.  `Adjust your inventory file to include tsc-host-1.`
+        3.  Ensure you create a directory *ssh-keys* with with the host-keys and the
+            shared-keys to avoid ssh problems when container is regenerated
+            
+                # this file is ansible.cfg in the root of the project
+                sudo mkdir -p ssh-keys/DEBIAN-11-0
+                sudo cp /etc/ssh/ssh_host* ssh-keys/DEBIAN-11-0
+                sudo mkdir -p ssh-keys/shared
+                ssh-keygen -t rsa -b 2048 -f ./ssh-keys/shared/id_rsa_lxc
+        
+        1.  `Adjust your inventory file to include tsc-host-1.`
             
                 # this file is inventory.ini in the root of the project
                 [lxc_hosts]
                 uberrimus ansible_host=127.0.0.1
-                tpcc-host-1 ansible_host=172.30.2.1
-                tsc-host-1 ansible_host=172.30.2.10
+                tpcc-host-1 ansible_host=172.30.2.3
                 [lxc_guests]
-                TSC-1 ansible_hosts=10.0.3.10
-                TSC-2 ansible_hosts=10.0.3.11
+                DEBIAN-11-0 ansible_hosts=10.0.3.10
+                DEBIAN-11-0 ansible_user=concesion
+                DEBIAN-11 ansible_hosts=10.0.3.11
+                DEBIAN-11 ansible_user=concesion
+                DEBIAN-11-2 ansible_hosts=10.0.3.12
+                DEBIAN-11-2 ansible_user=concesion
         
-        3.  Run the playbook with:
+        2.  Run the playbook with:
             
                 cd ansible
-                ansible-playbook -i inventory.ini tasks/create-lxc-TSC.yml --extra-vars "DEST=TSC-1"
+                ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-11.yml --extra-vars "DEST=DEBIAN-11"
 
 
-<a id="org0a8ed8d"></a>
+<a id="orgf00c013"></a>
 
-### TSC packages installation.
+### DEBIAN-11 packages installation.
 
-Instalation of Package requirements
+1.  Various packages
 
-    ---
-    - name: Set up TSC packages
-      hosts: all # here should be tsc-host-1 instead
-      become_method: sudo
-      #vars_prompt:
-        #- name: "ansible_become_pass"
-          #prompt: "Enter your sudo password in remote server"
-          #private: yes
+    Instalation of Package requirements
     
-    
-      tasks:
-        - name: apt update
-          become: yes
-          command: apt update
-    
-        - name: avoid tshark config to block installation #esto es para que no pregunte lo del setuid y se bloquee
-          become: yes
-          shell: echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
-    
-        - name: Install packages (batch 2)
-          become: yes
+        ---
+        - name: Set up DEBIAN-11 packages
+          hosts: all # here should be tsc-host-1 instead
           become_method: sudo
-          command: apt-get install -y {{ item }}
-          loop:
-            - vim
-            - munin
-            - munin-node
-            - psmisc
-            - daemon
-            - acl
-            - rsyslog-relp
-            - apache2
-            - php
-            - php-gd
-            - php-pgsql
-            - php-redis
-            - ntp
-            - gdb
-            - net-tools
-            - htop
-            - iotop
-            - ifenslave
-            - dcfldd
-            - socat
-            - apt-offline
-            - tshark
-            - nvme-cli
-            - snmp
-            - snmpd
-            - libsnmp-dev
-    
-        - name: Install packages (batch 3)
-          become: yes
-          become_method: sudo
-          command: apt-get install -y {{ item }}
-          loop:
-            - python3-pip
-            - python3-psycopg2
-            - python3-pyinotify
-            - python3-pil
-            - python3-redis
-            - python3-joblib
-            - python3-pycryptodome
-            - python3-scipy
-            - python3-networkx
-    
-        - name: Install packages (batch 3)
-          become: yes
-          become_method: sudo
-          command: apt-get install -y {{ item }}
-          loop:
-            - postgresql
-
-1.  Notes:
-
-    1.  Run the playbook with:
+          become: true
+          #vars_prompt:
+            #- name: "ansible_become_pass"
+              #prompt: "Enter your sudo password in remote server"
+              #private: yes
         
-            cd ansible 
-            ansible-playbook -i inventory.ini tasks/install-packages-TSC.yml -l TSC-1
-
-
-<a id="org1654d34"></a>
-
-## TPCC setup
-
-lo vamos gestionando
+        
+          tasks:
+            # - name: apt update
+            #   become: yes
+            #   command: apt update
+        
+            - name: avoid tshark config to block installation #esto es para que no pregunte lo del setuid y se bloquee
+              become: yes
+              shell: echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+        
+            - name: Set APT to not install recommended packages
+              copy:
+                dest: /etc/apt/apt.conf.d/01norecommend
+                content: |
+                  APT::Install-Recommends "0";
+                  APT::Install-Suggests "0";
+        
+            - name: Update APT package index
+              apt:
+                update_cache: yes
+        
+            - name: Install required packages
+              become: yes
+              become_method: sudo
+              apt:
+                name:
+                  - vim
+                  - munin
+                  - munin-node
+                  - psmisc
+                  - daemon
+                  - acl
+                  - rsyslog-relp
+                  - net-tools
+                  - htop
+                  - socat
+                  - python3-pip
+                state: present
+                install_recommends: no
+    
+    1.  Notes:
+    
+        1.  Run the playbook with:
+            
+                cd ansible 
+                ansible-playbook -i inventory.ini tasks/install-packages-DEBIAN-11.yml -l DEBIAN-11
 
