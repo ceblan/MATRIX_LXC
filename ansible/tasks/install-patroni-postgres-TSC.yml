@@ -1,0 +1,75 @@
+---
+- name: Set up Postgres and patroni cluster packages
+  hosts: all # here should be tsc-host-1 instead
+  become_method: sudo
+  become: yes
+  # vars:
+  #   CONFDVERSION: 0.16.0
+  #vars_prompt:
+    #- name: "ansible_become_pass"
+      #prompt: "Enter your sudo password in remote server"
+      #private: yes
+
+
+  tasks:
+
+    - name: Install packages (postgresql)
+      become: yes
+      become_method: sudo
+      apt:
+        name:
+          - postgresql
+          - patroni
+          - haproxy
+          # - etcd-server
+          # - etcd-client
+        state: present
+        install_recommends: no
+
+    - name: Create /etc/patroni.yml
+      copy:
+        src: "{{ playbook_dir }}/patroni.conf.d/postgres-{{ DEST }}.yml"
+        dest: "/etc/patroni.yaml"
+
+    # - name: Download etcd
+    #   get_url:
+    #     url: "https://github.com/coreos/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64.tar.gz"
+    #     dest: /tmp/etcd-v3.5.0-linux-amd64.tar.gz
+
+    # - name: Extract etcd archive
+    #   unarchive:
+    #     src: /tmp/etcd-v3.5.0-linux-amd64.tar.gz
+    #     dest: /usr/local/bin
+    #     remote_src: yes
+    #     extra_opts: [ --strip=1 ]
+
+    # - name: Create etcd service file
+    #   copy:
+    #     dest: /etc/systemd/system/etcd.service
+    #     content: |
+    #       [Unit]
+    #       Description=etcd key-value store
+    #       Documentation=https://github.com/coreos/etcd
+    #       After=network-online.target
+    #       Wants=network-online.target
+    #       systemd-networkd-wait-online.service
+
+    #       [Service]
+    #       Type=notify
+    #       User=etcd
+    #       ExecStart=/usr/local/bin/etcd
+    #       Restart=always
+    #       LimitNOFILE=65536
+
+    #       [Install]
+    #       WantedBy=multi-user.target
+
+    # - name: Reload systemd to recognize new service
+    #   systemd:
+    #     daemon_reload: yes
+
+    # - name: Ensure etcd service is enabled and started
+    #   systemd:
+    #     name: etcd
+    #     enabled: yes
+    #     state: started
