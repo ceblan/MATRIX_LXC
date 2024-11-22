@@ -1,13 +1,13 @@
 
 # Table of Contents
 
-1.  [RSS LXC Containers](#org93438da)
-    1.  [DEBIAN-12 setup](#org25fa8cd)
-        1.  [DEBIAN-12 LXC initial setup](#org565c23d)
-        2.  [DEBIAN-12 packages installation.](#org2617661)
+1.  [RSS LXC Containers](#org1791157)
+    1.  [DEBIAN-12 setup](#org351e019)
+        1.  [DEBIAN-12 LXC initial setup](#orgdc3ecbb)
+        2.  [DEBIAN-12 packages installation.](#org8ecb699)
 
 
-<a id="org93438da"></a>
+<a id="org1791157"></a>
 
 # RSS LXC Containers
 
@@ -17,18 +17,18 @@ run:
 1.  DEBIAN-12.
 
 
-<a id="org25fa8cd"></a>
+<a id="org351e019"></a>
 
 ## DEBIAN-12 setup
 
 We split the DEBIAN-12 set up in three stages, each one with its own ansible
 playbook:
 
-1.  [DEBIAN-12 lxc playbook](#org6c7ae24)
-2.  [DEBIAN-12 packages installation](#orgbb20cbd)
+1.  [DEBIAN-12 lxc playbook](#orgcc5c9bb)
+2.  [DEBIAN-12 packages installation](#org467315a)
 
 
-<a id="org565c23d"></a>
+<a id="orgdc3ecbb"></a>
 
 ### DEBIAN-12 LXC initial setup
 
@@ -129,11 +129,11 @@ LXC
         
             - name: Ensure the directory for SSH keys exists
               file:
-                path: "{{ playbook_dir }}/ssh-keys/{{ DEST }}"
+                path: "{{ playbook_dir }}/files/ssh-keys/{{ DEST }}"
                 state: directory
         
             - name: Check if keys exist
-              shell: "find {{ playbook_dir }}/ssh-keys/{{ DEST }} -name '*key*' | wc -l"
+              shell: "find {{ playbook_dir }}/files/ssh-keys/{{ DEST }} -name '*key*' | wc -l"
               register: ssh_keys_exists
               changed_when: false
         
@@ -141,24 +141,29 @@ LXC
                 msg: "Number of keys found: {{ ssh_keys_exists.stdout }}"
         
             - name: Generate SSH host keys
-              command: ssh-keygen -t {{ item }} -N "" -f {{ playbook_dir }}/ssh-keys/{{ DEST }}/ssh_host_{{ item }}_key
+              command: ssh-keygen -t {{ item }} -N "" -f {{ playbook_dir }}/files/ssh-keys/{{ DEST }}/ssh_host_{{ item }}_key
               with_items:
                 - rsa
                 - ecdsa
                 - ed25519
               when: ssh_keys_exists.stdout | trim | int != 6
         
+            - name: Change {{ playbook_dir }}/files/ssh-keys/{{ DEST }} owner to {{ ansible_env.USER }}
+              shell: "chown {{ ansible_env.USER }}:{{ ansible_env.USER }} {{ playbook_dir }}/files/ssh-keys/{{ DEST }}/*"
+              register: ssh_key_files
+        
+        
             - name: Change keys permissions before copy
-              shell: "chmod 644 {{ playbook_dir }}/ssh-keys/{{ DEST }}/*"
+              shell: "chmod 644 {{ playbook_dir }}/files/ssh-keys/{{ DEST }}/*"
               register: ssh_key_files
         
             - name: Ensure the directory for SSH shared keys exists
               file:
-                path: "{{ playbook_dir }}/ssh-keys/shared"
+                path: "{{ playbook_dir }}/files/ssh-keys/shared"
                 state: directory
         
             - name: Check if shared keys exist
-              shell: "find {{ playbook_dir }}/ssh-keys/shared/ -name 'id_rsa_lxc*' | wc -l"
+              shell: "find {{ playbook_dir }}/files/ssh-keys/shared/ -name 'id_rsa_lxc*' | wc -l"
               register: ssh_shared_keys_exists
               changed_when: false
         
@@ -166,11 +171,11 @@ LXC
                 msg: "Number of shared keys found: {{ ssh_shared_keys_exists.stdout }}"
         
             - name: Generate SSH shared keys
-              command: ssh-keygen -t rsa -N "" -f {{ playbook_dir }}/ssh-keys/shared/id_rsa_lxc
+              command: ssh-keygen -t rsa -N "" -f {{ playbook_dir }}/files/ssh-keys/shared/id_rsa_lxc
               when: ssh_shared_keys_exists.stdout | trim | int != 2
         
             - name: Change keys permissions before copy
-              shell: "chmod 644 {{ playbook_dir }}/ssh-keys/shared/*"
+              shell: "chmod 644 {{ playbook_dir }}/files/ssh-keys/shared/*"
               register: ssh_key_files
         
         
@@ -274,11 +279,11 @@ LXC
               when: container_status.rc == 0
         
             # - name: Copy SSH host keys to {{ DEST }}
-            #   command: lxc-file push {{ playbook_dir }}/ssh-keys/{{ DEST }}/* {{ DEST }}/etc/ssh/
+            #   command: lxc-file push {{ playbook_dir }}/files/ssh-keys/{{ DEST }}/* {{ DEST }}/etc/ssh/
             #   when: container_status.rc == 0
         
             - name: Get list of SSH host keys
-              shell: "find {{ playbook_dir }}/ssh-keys/{{ DEST }} -name '*key*'"
+              shell: "find {{ playbook_dir }}/files/ssh-keys/{{ DEST }} -name '*key*'"
               register: ssh_key_files
         
             - name: Copy SSH host keys to /var/lib/lxc/{{ DEST }}/rootfs/etc/ssh/
@@ -297,13 +302,13 @@ LXC
               command: lxc-attach -n {{ DEST }} -- /etc/init.d/ssh restart
         
             - name: Set root password for {{ DEST }}
-              command: lxc-attach -n {{ DEST }} -- shell -c "echo 'root:finiquito' | chpasswd"
+              command: lxc-attach -n {{ DEST }} -- sh -c "echo 'root:finiquito' | chpasswd"
         
             - name: Create user "concesion"
               command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 concesion
         
             - name: Create user "concesion" with password
-              command: lxc-attach -n {{ DEST }} -- shell -c "echo 'concesion:concesion' | chpasswd"
+              command: lxc-attach -n {{ DEST }} -- sh -c "echo 'concesion:concesion' | chpasswd"
         
             - name: Add user "concesion" to the sudo group
               command: lxc-attach -n {{ DEST }} -- usermod -aG sudo concesion
@@ -320,10 +325,10 @@ LXC
               command: lxc-attach -n {{ DEST }} -- /etc/init.d/sudo restart
         
             - name: Create dir /home/concesion/.ssh
-              command: lxc-attach -n {{ DEST }} -- shell -c "mkdir -p /home/concesion/.ssh; chown -R concesion:concesion /home/concesion/.ssh"
+              command: lxc-attach -n {{ DEST }} -- sh -c "mkdir -p /home/concesion/.ssh; chown -R concesion:concesion /home/concesion/.ssh"
         
             - name: Get list of SSH shared keys
-              shell: "find {{ playbook_dir }}/ssh-keys/shared -name 'id_rsa_lxc*'"
+              shell: "find {{ playbook_dir }}/files/ssh-keys/shared -name 'id_rsa_lxc*'"
               register: ssh_shared_keys_files
         
             - name: Copy SSH shared keys to /var/lib/lxc/{{ DEST }}/rootfs/home/concesion/.ssh/
@@ -339,13 +344,13 @@ LXC
               shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/home/concesion/.ssh/*pub"
         
             - name: Generate authorized_keys
-              command: lxc-attach -n {{ DEST }} -- shell -c "cat /home/concesion/.ssh/id_rsa_lxc.pub > /home/concesion/.ssh/authorized_keys; chmod 600  /home/concesion/.ssh/authorized_keys"
+              command: lxc-attach -n {{ DEST }} -- sh -c "cat /home/concesion/.ssh/id_rsa_lxc.pub > /home/concesion/.ssh/authorized_keys; chmod 600  /home/concesion/.ssh/authorized_keys"
         
             - name: Create dir /home/concesion/.ssh
-              command: lxc-attach -n {{ DEST }} -- shell -c "chown -R concesion:concesion /home/concesion/.ssh"
+              command: lxc-attach -n {{ DEST }} -- sh -c "chown -R concesion:concesion /home/concesion/.ssh"
         
             - name: Install packages (batch 1)
-              command: lxc-attach -n {{ DEST }} -- shell -c "apt-get install -y {{ item }}"
+              command: lxc-attach -n {{ DEST }} -- sh -c "apt-get install -y {{ item }}"
               loop:
                 - wget
                 - curl
@@ -354,7 +359,7 @@ LXC
               command: lxc-attach -n {{ DEST }} -- rm -f /etc/apt/sources.list
         
             - name: Set sources lists
-              command: lxc-attach -n {{ DEST }} -- shell -c "echo {{ item }} >> /etc/apt/sources.list"
+              command: lxc-attach -n {{ DEST }} -- sh -c "echo {{ item }} >> /etc/apt/sources.list"
               loop:
                 - "# generated by ansible"
                 - "deb http://deb.debian.org/debian/ bookworm main contrib non-free-firmware"
@@ -366,10 +371,10 @@ LXC
                 - "deb [arch=amd64,i386] http://www.deb-multimedia.org bookworm main non-free"
         
             - name: Get keys for web.deb-multimedia.org
-              command: lxc-attach -n {{ DEST }} -- shell -c "wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2016.8.1_all.deb; dpkg -i deb-multimedia-keyring_2016.8.1_all.deb"
+              command: lxc-attach -n {{ DEST }} -- sh -c "wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2016.8.1_all.deb; dpkg -i deb-multimedia-keyring_2016.8.1_all.deb"
         
             - name: Update sources
-              command: lxc-attach -n {{ DEST }} -- shell -c "apt-get update"
+              command: lxc-attach -n {{ DEST }} -- sh -c "apt-get update"
         
             - name: List all LXC containers
               command: lxc-ls -f
@@ -422,10 +427,10 @@ LXC
         2.  Run the playbook with:
             
                 cd ansible
-                ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12"
+                ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12-0"
 
 
-<a id="org2617661"></a>
+<a id="org8ecb699"></a>
 
 ### DEBIAN-12 packages installation.
 
@@ -488,5 +493,5 @@ LXC
         1.  Run the playbook with:
             
                 cd ansible 
-                ansible-playbook -i inventory.ini tasks/install-packages-DEBIAN-12.yml -l DEBIAN-12
+                ansible-playbook -i inventory.ini tasks/install-packages-DEBIAN-12.yml -l DEBIAN-12-0
 
