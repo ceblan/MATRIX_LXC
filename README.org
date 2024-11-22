@@ -16,19 +16,19 @@
 This note contains some recipes for creating and configuring LXC containers to
 run:
 
-1. DEBIAN-12.
+1. EMACS-30.
 
-** DEBIAN-12 setup
+** EMACS-30 setup
 
-We split the DEBIAN-12 set up in three stages, each one with its own ansible
+We split the EMACS-30 set up in three stages, each one with its own ansible
 playbook:
 
-1. [[id:214611e0-4085-451e-bfb1-fba2f6a2152e][DEBIAN-12 lxc playbook]]
-2. [[id:6a9266c3-768a-4d72-8248-38aaae095445][DEBIAN-12 packages installation]]
+1. [[id:214611e0-4085-451e-bfb1-fba2f6a2152e][EMACS-30 lxc playbook]]
+2. [[id:6a9266c3-768a-4d72-8248-38aaae095445][EMACS-30 packages installation]]
 
-*** DEBIAN-12 LXC initial setup
+*** EMACS-30 LXC initial setup
 
-Below re the tasks as well as some tips about how to provision a DEBIAN-12 using
+Below re the tasks as well as some tips about how to provision a EMACS-30 using
 LXC
 
 **** How to create a LXC debian bookworm container in debian:
@@ -43,22 +43,22 @@ To create an LXC Debian Bookworm container in Debian, follow these steps:
 
 2. *Create a directory for your container*:
    #+begin_src shell :tangle no
-   sudo mkdir -p /var/lib/lxc/DEBIAN-12
+   sudo mkdir -p /var/lib/lxc/EMACS-30
    #+end_src
 
 3. *Create the container*:
    #+begin_src shell :tangle no
-     sudo lxc-create --name DEBIAN-12 --template download -- --dist debian --release bookworm --arch amd64
+     sudo lxc-create --name EMACS-30 --template download -- --dist debian --release bookworm --arch amd64
    #+end_src
 
 4. *Start the container*:
    #+begin_src shell :tangle no
-   sudo lxc-start -n DEBIAN-12
+   sudo lxc-start -n EMACS-30
    #+end_src
 
 5. *Access the container’s shell*:
    #+begin_src shell :tangle no
-   sudo lxc-attach -n DEBIAN-12
+   sudo lxc-attach -n EMACS-30
    #+end_src
 
 You now have a running Debian Bookworm container!
@@ -69,22 +69,22 @@ To delete or remove an LXC container, follow these steps:
 
 1. *Stop the container* (if it is running):
    #+begin_src shell :tangle no
-   sudo lxc-stop -n DEBIAN-12
+   sudo lxc-stop -n EMACS-30
    #+end_src
 
 2. *Delete the container*:
    #+begin_src shell :tangle no
-   sudo lxc-destroy -n DEBIAN-12
+   sudo lxc-destroy -n EMACS-30
    #+end_src
 
-After these commands, the =DEBIAN-12= LXC container will be removed from your
+After these commands, the =EMACS-30= LXC container will be removed from your
 system.
 
 **** How to make the container to get same ip address every start:
 
 To assign a static IP address to your LXC container, you can follow these steps:
 
-1. Stop DEBIAN-12 container
+1. Stop EMACS-30 container
 2. Uncomment the line "LXC_DHCP_CONFILE=/etc/dnsmasq.conf"
 3. as root in the server machine do
    #+begin_src shell :tangle no
@@ -114,18 +114,18 @@ addresses.
 :ID:       214611e0-4085-451e-bfb1-fba2f6a2152e
 :END:
 
-Below there is an Ansible playbook that sets up the DEBIAN-12 container (lxc) on the
+Below there is an Ansible playbook that sets up the EMACS-30 container (lxc) on the
 host *tsc-host-1*, performing all the tasks you've outlined:
 
-#+begin_src yaml :tangle ansible/tasks/create-lxc-DEBIAN-12.yml
+#+begin_src yaml :tangle ansible/tasks/create-lxc-EMACS-30.yml
   ---
-  - name: Set up LXC container for a DEBIAN-12
+  - name: Set up LXC container for a EMACS-30
     hosts: uberrimus # here should be tsc-host-1 instead
     become: yes
     vars_files:
       - vars.yml
     #vars:
-    #  DEST: DEBIAN-12  # remove this line if "--extra-vars "DEST=DEBIAN-12" is passed when calling ansible-playbook
+    #  DEST: EMACS-30  # remove this line if "--extra-vars "DEST=EMACS-30" is passed when calling ansible-playbook
 
     tasks:
       - name: Install LXC
@@ -423,8 +423,8 @@ host *tsc-host-1*, performing all the tasks you've outlined:
    shared-keys to avoid ssh problems when container is regenerated
     #+begin_src sh :tangle no
       # this file is ansible.cfg in the root of the project
-      sudo mkdir -p ssh-keys/DEBIAN-12-0
-      sudo cp /etc/ssh/ssh_host* ssh-keys/DEBIAN-12-0
+      sudo mkdir -p ssh-keys/EMACS-30
+      sudo cp /etc/ssh/ssh_host* ssh-keys/EMACS-30
       sudo mkdir -p ssh-keys/shared
       ssh-keygen -t rsa -b 2048 -f ./ssh-keys/shared/id_rsa_lxc
    #+end_src
@@ -439,21 +439,21 @@ host *tsc-host-1*, performing all the tasks you've outlined:
      uberrimus ansible_host=127.0.0.1
      tpcc-host-1 ansible_host=172.30.2.3
      [lxc_guests]
-     DEBIAN-12-0 ansible_hosts=10.0.3.10
-     DEBIAN-12-0 ansible_user=concesion
-     DEBIAN-12 ansible_hosts=10.0.3.11
-     DEBIAN-12 ansible_user=concesion
-     DEBIAN-12-2 ansible_hosts=10.0.3.12
-     DEBIAN-12-2 ansible_user=concesion
+     EMACS-30 ansible_hosts=10.0.3.40
+     EMACS-30 ansible_user=concesion
+     EMACS-30 ansible_hosts=10.0.3.11
+     EMACS-30 ansible_user=concesion
+     EMACS-30-2 ansible_hosts=10.0.3.12
+     EMACS-30-2 ansible_user=concesion
      #+end_src
   
 5. Run the playbook with:
    #+begin_src shell :tangle no
      cd ansible
-     ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12-0"
+     ansible-playbook -i inventory.ini tasks/create-lxc-EMACS-30.yml --extra-vars "DEST=EMACS-30"
    #+end_src
  
-*** DEBIAN-12 packages installation.
+*** EMACS-30 packages installation.
 
 **** Various packages
 :PROPERTIES:
@@ -462,9 +462,9 @@ host *tsc-host-1*, performing all the tasks you've outlined:
 
 Instalation of Package requirements
 
-#+begin_src yaml :tangle ansible/tasks/install-packages-DEBIAN-12.yml
+#+begin_src yaml :tangle ansible/tasks/install-packages-EMACS-30.yml
   ---
-  - name: Set up DEBIAN-12 packages
+  - name: Set up EMACS-30 packages
     hosts: all # here should be tsc-host-1 instead
     become_method: sudo
     become: true
@@ -520,5 +520,5 @@ Instalation of Package requirements
 1. Run the playbook with:
    #+begin_src shell :tangle no
      cd ansible 
-     ansible-playbook -i inventory.ini tasks/install-packages-DEBIAN-12.yml -l DEBIAN-12-0
+     ansible-playbook -i inventory.ini tasks/install-packages-EMACS-30.yml -l EMACS-30
    #+end_src
