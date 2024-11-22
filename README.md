@@ -1,38 +1,39 @@
 
 # Table of Contents
 
-1.  [RSS LXC Containers](#org0cfdd63)
-    1.  [DEBIAN-11 setup](#org3dc6999)
-        1.  [DEBIAN-11 LXC initial setup](#orgb6d7d44)
-        2.  [DEBIAN-11 packages installation.](#orgf00c013)
+1.  [RSS LXC Containers](#org93438da)
+    1.  [DEBIAN-12 setup](#org25fa8cd)
+        1.  [DEBIAN-12 LXC initial setup](#org565c23d)
+        2.  [DEBIAN-12 packages installation.](#org2617661)
 
 
-<a id="org0cfdd63"></a>
+<a id="org93438da"></a>
 
 # RSS LXC Containers
 
 This note contains some recipes for creating and configuring LXC containers to
 run:
 
-1.  DEBIAN-11.
+1.  DEBIAN-12.
 
 
-<a id="org3dc6999"></a>
+<a id="org25fa8cd"></a>
 
-## DEBIAN-11 setup
+## DEBIAN-12 setup
 
-We split the DEBIAN-11 set up in three stages, each one with its own ansible playbook:
+We split the DEBIAN-12 set up in three stages, each one with its own ansible
+playbook:
 
-1.  [DEBIAN-11 lxc playbook](#orgdcd54ca)
-2.  TODO:
-3.  TODO:
+1.  [DEBIAN-12 lxc playbook](#org6c7ae24)
+2.  [DEBIAN-12 packages installation](#orgbb20cbd)
 
 
-<a id="orgb6d7d44"></a>
+<a id="org565c23d"></a>
 
-### DEBIAN-11 LXC initial setup
+### DEBIAN-12 LXC initial setup
 
-Below re the tasks as well as some tips about how to provision a DEBIAN-11 using LXC
+Below re the tasks as well as some tips about how to provision a DEBIAN-12 using
+LXC
 
 1.  How to create a LXC debian bookworm container in debian:
 
@@ -45,19 +46,19 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
     
     2.  **Create a directory for your container**:
         
-            sudo mkdir -p /var/lib/lxc/DEBIAN-11
+            sudo mkdir -p /var/lib/lxc/DEBIAN-12
     
     3.  **Create the container**:
         
-            sudo lxc-create --name DEBIAN-11 --template download -- --dist debian --release bookworm --arch amd64
+            sudo lxc-create --name DEBIAN-12 --template download -- --dist debian --release bookworm --arch amd64
     
     4.  **Start the container**:
         
-            sudo lxc-start -n DEBIAN-11
+            sudo lxc-start -n DEBIAN-12
     
     5.  **Access the container’s shell**:
         
-            sudo lxc-attach -n DEBIAN-11
+            sudo lxc-attach -n DEBIAN-12
     
     You now have a running Debian Bookworm container!
 
@@ -67,20 +68,20 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
     
     1.  **Stop the container** (if it is running):
         
-            sudo lxc-stop -n DEBIAN-11
+            sudo lxc-stop -n DEBIAN-12
     
     2.  **Delete the container**:
         
-            sudo lxc-destroy -n DEBIAN-11
+            sudo lxc-destroy -n DEBIAN-12
     
-    After these commands, the `DEBIAN-11` LXC container will be removed from your
+    After these commands, the `DEBIAN-12` LXC container will be removed from your
     system.
 
 3.  How to make the container to get same ip address every start:
 
     To assign a static IP address to your LXC container, you can follow these steps:
     
-    1.  Stop DEBIAN-11 container
+    1.  Stop DEBIAN-12 container
     2.  Uncomment the line "LXC<sub>DHCP</sub><sub>CONFILE</sub>=/etc/dnsmasq.conf"
     3.  as root in the server machine do
         
@@ -103,15 +104,15 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
 
 5.  **Ansible** playbook that performs all previous task on host tsc-host-1.
 
-    Below there is an Ansible playbook that sets up the DEBIAN-11 container (lxc) on the
+    Below there is an Ansible playbook that sets up the DEBIAN-12 container (lxc) on the
     host **tsc-host-1**, performing all the tasks you've outlined:
     
         ---
-        - name: Set up LXC container for a DEBIAN-11
+        - name: Set up LXC container for a DEBIAN-12
           hosts: uberrimus # here should be tsc-host-1 instead
           become: yes
           #vars:
-          #  DEST: DEBIAN-11  # remove this line if "--extra-vars "DEST=DEBIAN-11" is passed when calling ansible-playbook
+          #  DEST: DEBIAN-12  # remove this line if "--extra-vars "DEST=DEBIAN-12" is passed when calling ansible-playbook
         
           tasks:
             - name: Install LXC
@@ -296,13 +297,13 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
               command: lxc-attach -n {{ DEST }} -- /etc/init.d/ssh restart
         
             - name: Set root password for {{ DEST }}
-              command: lxc-attach -n {{ DEST }} -- bash -c "echo 'root:finiquito' | chpasswd"
+              command: lxc-attach -n {{ DEST }} -- shell -c "echo 'root:finiquito' | chpasswd"
         
             - name: Create user "concesion"
               command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 concesion
         
             - name: Create user "concesion" with password
-              command: lxc-attach -n {{ DEST }} -- bash -c "echo 'concesion:concesion' | chpasswd"
+              command: lxc-attach -n {{ DEST }} -- shell -c "echo 'concesion:concesion' | chpasswd"
         
             - name: Add user "concesion" to the sudo group
               command: lxc-attach -n {{ DEST }} -- usermod -aG sudo concesion
@@ -319,7 +320,7 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
               command: lxc-attach -n {{ DEST }} -- /etc/init.d/sudo restart
         
             - name: Create dir /home/concesion/.ssh
-              command: lxc-attach -n {{ DEST }} -- bash -c "mkdir -p /home/concesion/.ssh; chown -R concesion:concesion /home/concesion/.ssh"
+              command: lxc-attach -n {{ DEST }} -- shell -c "mkdir -p /home/concesion/.ssh; chown -R concesion:concesion /home/concesion/.ssh"
         
             - name: Get list of SSH shared keys
               shell: "find {{ playbook_dir }}/ssh-keys/shared -name 'id_rsa_lxc*'"
@@ -338,13 +339,13 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
               shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/home/concesion/.ssh/*pub"
         
             - name: Generate authorized_keys
-              command: lxc-attach -n {{ DEST }} -- bash -c "cat /home/concesion/.ssh/id_rsa_lxc.pub > /home/concesion/.ssh/authorized_keys; chmod 600  /home/concesion/.ssh/authorized_keys"
+              command: lxc-attach -n {{ DEST }} -- shell -c "cat /home/concesion/.ssh/id_rsa_lxc.pub > /home/concesion/.ssh/authorized_keys; chmod 600  /home/concesion/.ssh/authorized_keys"
         
             - name: Create dir /home/concesion/.ssh
-              command: lxc-attach -n {{ DEST }} -- bash -c "chown -R concesion:concesion /home/concesion/.ssh"
+              command: lxc-attach -n {{ DEST }} -- shell -c "chown -R concesion:concesion /home/concesion/.ssh"
         
             - name: Install packages (batch 1)
-              command: lxc-attach -n {{ DEST }} -- bash -c "apt-get install -y {{ item }}"
+              command: lxc-attach -n {{ DEST }} -- shell -c "apt-get install -y {{ item }}"
               loop:
                 - wget
                 - curl
@@ -353,7 +354,7 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
               command: lxc-attach -n {{ DEST }} -- rm -f /etc/apt/sources.list
         
             - name: Set sources lists
-              command: lxc-attach -n {{ DEST }} -- bash -c "echo {{ item }} >> /etc/apt/sources.list"
+              command: lxc-attach -n {{ DEST }} -- shell -c "echo {{ item }} >> /etc/apt/sources.list"
               loop:
                 - "# generated by ansible"
                 - "deb http://deb.debian.org/debian/ bookworm main contrib non-free-firmware"
@@ -365,10 +366,10 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
                 - "deb [arch=amd64,i386] http://www.deb-multimedia.org bookworm main non-free"
         
             - name: Get keys for web.deb-multimedia.org
-              command: lxc-attach -n {{ DEST }} -- bash -c "wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2016.8.1_all.deb; dpkg -i deb-multimedia-keyring_2016.8.1_all.deb"
+              command: lxc-attach -n {{ DEST }} -- shell -c "wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2016.8.1_all.deb; dpkg -i deb-multimedia-keyring_2016.8.1_all.deb"
         
             - name: Update sources
-              command: lxc-attach -n {{ DEST }} -- bash -c "apt-get update"
+              command: lxc-attach -n {{ DEST }} -- shell -c "apt-get update"
         
             - name: List all LXC containers
               command: lxc-ls -f
@@ -399,8 +400,8 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
             shared-keys to avoid ssh problems when container is regenerated
             
                 # this file is ansible.cfg in the root of the project
-                sudo mkdir -p ssh-keys/DEBIAN-11-0
-                sudo cp /etc/ssh/ssh_host* ssh-keys/DEBIAN-11-0
+                sudo mkdir -p ssh-keys/DEBIAN-12-0
+                sudo cp /etc/ssh/ssh_host* ssh-keys/DEBIAN-12-0
                 sudo mkdir -p ssh-keys/shared
                 ssh-keygen -t rsa -b 2048 -f ./ssh-keys/shared/id_rsa_lxc
         
@@ -411,29 +412,29 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
                 uberrimus ansible_host=127.0.0.1
                 tpcc-host-1 ansible_host=172.30.2.3
                 [lxc_guests]
-                DEBIAN-11-0 ansible_hosts=10.0.3.10
-                DEBIAN-11-0 ansible_user=concesion
-                DEBIAN-11 ansible_hosts=10.0.3.11
-                DEBIAN-11 ansible_user=concesion
-                DEBIAN-11-2 ansible_hosts=10.0.3.12
-                DEBIAN-11-2 ansible_user=concesion
+                DEBIAN-12-0 ansible_hosts=10.0.3.10
+                DEBIAN-12-0 ansible_user=concesion
+                DEBIAN-12 ansible_hosts=10.0.3.11
+                DEBIAN-12 ansible_user=concesion
+                DEBIAN-12-2 ansible_hosts=10.0.3.12
+                DEBIAN-12-2 ansible_user=concesion
         
         2.  Run the playbook with:
             
                 cd ansible
-                ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-11.yml --extra-vars "DEST=DEBIAN-11"
+                ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12"
 
 
-<a id="orgf00c013"></a>
+<a id="org2617661"></a>
 
-### DEBIAN-11 packages installation.
+### DEBIAN-12 packages installation.
 
 1.  Various packages
 
     Instalation of Package requirements
     
         ---
-        - name: Set up DEBIAN-11 packages
+        - name: Set up DEBIAN-12 packages
           hosts: all # here should be tsc-host-1 instead
           become_method: sudo
           become: true
@@ -487,5 +488,5 @@ Below re the tasks as well as some tips about how to provision a DEBIAN-11 using
         1.  Run the playbook with:
             
                 cd ansible 
-                ansible-playbook -i inventory.ini tasks/install-packages-DEBIAN-11.yml -l DEBIAN-11
+                ansible-playbook -i inventory.ini tasks/install-packages-DEBIAN-12.yml -l DEBIAN-12
 
