@@ -1,13 +1,13 @@
 
 # Table of Contents
 
-1.  [RSS LXC Containers](#org1791157)
-    1.  [DEBIAN-12 setup](#org351e019)
-        1.  [DEBIAN-12 LXC initial setup](#orgdc3ecbb)
-        2.  [DEBIAN-12 packages installation.](#org8ecb699)
+1.  [RSS LXC Containers](#org8d7d13e)
+    1.  [DEBIAN-12 setup](#org06e980c)
+        1.  [DEBIAN-12 LXC initial setup](#org689b0de)
+        2.  [DEBIAN-12 packages installation.](#org877ef00)
 
 
-<a id="org1791157"></a>
+<a id="org8d7d13e"></a>
 
 # RSS LXC Containers
 
@@ -17,18 +17,18 @@ run:
 1.  DEBIAN-12.
 
 
-<a id="org351e019"></a>
+<a id="org06e980c"></a>
 
 ## DEBIAN-12 setup
 
 We split the DEBIAN-12 set up in three stages, each one with its own ansible
 playbook:
 
-1.  [DEBIAN-12 lxc playbook](#orgcc5c9bb)
-2.  [DEBIAN-12 packages installation](#org467315a)
+1.  [DEBIAN-12 lxc playbook](#org8d8b10e)
+2.  [DEBIAN-12 packages installation](#orgfb82b2e)
 
 
-<a id="orgdc3ecbb"></a>
+<a id="org689b0de"></a>
 
 ### DEBIAN-12 LXC initial setup
 
@@ -111,6 +111,8 @@ LXC
         - name: Set up LXC container for a DEBIAN-12
           hosts: uberrimus # here should be tsc-host-1 instead
           become: yes
+          vars_files:
+            - vars.yml
           #vars:
           #  DEST: DEBIAN-12  # remove this line if "--extra-vars "DEST=DEBIAN-12" is passed when calling ansible-playbook
         
@@ -304,14 +306,14 @@ LXC
             - name: Set root password for {{ DEST }}
               command: lxc-attach -n {{ DEST }} -- sh -c "echo 'root:finiquito' | chpasswd"
         
-            - name: Create user "concesion"
-              command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 concesion
+            - name: Create user {{ tsc_username }}
+              command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 {{ tsc_username }}
         
-            - name: Create user "concesion" with password
-              command: lxc-attach -n {{ DEST }} -- sh -c "echo 'concesion:concesion' | chpasswd"
+            - name: Create user {{ tsc_username }} with password
+              command: lxc-attach -n {{ DEST }} -- sh -c "echo '{{ tsc_username }}:{{ tsc_username }}' | chpasswd"
         
-            - name: Add user "concesion" to the sudo group
-              command: lxc-attach -n {{ DEST }} -- usermod -aG sudo concesion
+            - name: Add user {{ tsc_username }} to the sudo group
+              command: lxc-attach -n {{ DEST }} -- usermod -aG sudo {{ tsc_username }}
         
             - name: Allow members of the sudo group to run sudo without a password
               become: yes
@@ -324,30 +326,30 @@ LXC
             - name: Restart sudo
               command: lxc-attach -n {{ DEST }} -- /etc/init.d/sudo restart
         
-            - name: Create dir /home/concesion/.ssh
-              command: lxc-attach -n {{ DEST }} -- sh -c "mkdir -p /home/concesion/.ssh; chown -R concesion:concesion /home/concesion/.ssh"
+            - name: Create dir /home/{{ tsc_username }}/.ssh
+              command: lxc-attach -n {{ DEST }} -- sh -c "mkdir -p /home/{{ tsc_username }}/.ssh; chown -R {{ tsc_username }}:{{ tsc_username }} /home/{{ tsc_username }}/.ssh"
         
             - name: Get list of SSH shared keys
               shell: "find {{ playbook_dir }}/files/ssh-keys/shared -name 'id_rsa_lxc*'"
               register: ssh_shared_keys_files
         
-            - name: Copy SSH shared keys to /var/lib/lxc/{{ DEST }}/rootfs/home/concesion/.ssh/
+            - name: Copy SSH shared keys to /var/lib/lxc/{{ DEST }}/rootfs/home/{{ tsc_username }}/.ssh/
               copy:
                 src: "{{ item }}"
-                dest: "/var/lib/lxc/{{ DEST }}/rootfs/home/concesion/.ssh/"
+                dest: "/var/lib/lxc/{{ DEST }}/rootfs/home/{{ tsc_username }}/.ssh/"
                 owner: root
                 group: root
                 mode: '0600'
               with_items: "{{ ssh_shared_keys_files.stdout_lines }}"
         
             - name: Change public keys permissions after copy
-              shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/home/concesion/.ssh/*pub"
+              shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/home/{{ tsc_username }}/.ssh/*pub"
         
             - name: Generate authorized_keys
-              command: lxc-attach -n {{ DEST }} -- sh -c "cat /home/concesion/.ssh/id_rsa_lxc.pub > /home/concesion/.ssh/authorized_keys; chmod 600  /home/concesion/.ssh/authorized_keys"
+              command: lxc-attach -n {{ DEST }} -- sh -c "cat /home/{{ tsc_username }}/.ssh/id_rsa_lxc.pub > /home/{{ tsc_username }}/.ssh/authorized_keys; chmod 600  /home/{{ tsc_username }}/.ssh/authorized_keys"
         
             - name: Create dir /home/concesion/.ssh
-              command: lxc-attach -n {{ DEST }} -- sh -c "chown -R concesion:concesion /home/concesion/.ssh"
+              command: lxc-attach -n {{ DEST }} -- sh -c "chown -R {{ tsc_username }}:{{ tsc_username }} /home/{{ tsc_username }}/.ssh"
         
             - name: Install packages (batch 1)
               command: lxc-attach -n {{ DEST }} -- sh -c "apt-get install -y {{ item }}"
@@ -430,7 +432,7 @@ LXC
                 ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12-0"
 
 
-<a id="org8ecb699"></a>
+<a id="org877ef00"></a>
 
 ### DEBIAN-12 packages installation.
 
