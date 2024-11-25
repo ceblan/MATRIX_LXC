@@ -1,34 +1,39 @@
 
 # Table of Contents
 
-1.  [RSS LXC Containers](#org8d7d13e)
-    1.  [DEBIAN-12 setup](#org06e980c)
-        1.  [DEBIAN-12 LXC initial setup](#org689b0de)
-        2.  [DEBIAN-12 packages installation.](#org877ef00)
+1.  [RSS LXC Containers](#orgc31d114)
+    1.  [TL;DR](#org1098e50)
+    2.  [DEBIAN-12 setup](#org78376ba)
+        1.  [DEBIAN-12 LXC initial setup](#orgcfa3fa6)
+        2.  [DEBIAN-12 packages installation.](#org62c0d8a)
 
 
-<a id="org8d7d13e"></a>
+<a id="orgc31d114"></a>
 
 # RSS LXC Containers
 
-This note contains some recipes for creating and configuring LXC containers to
-run:
-
-1.  DEBIAN-12.
+This note contains some recipes for creating and configuring LXC containers.
 
 
-<a id="org06e980c"></a>
+<a id="org1098e50"></a>
+
+## TL;DR
+
+Todo esto está disponible para consultar y clonar en [github/ceblan/howto<sub>LXC</sub>](https://github.com/ceblan/Howto-LXC) 
+
+
+<a id="org78376ba"></a>
 
 ## DEBIAN-12 setup
 
 We split the DEBIAN-12 set up in three stages, each one with its own ansible
 playbook:
 
-1.  [DEBIAN-12 lxc playbook](#org8d8b10e)
-2.  [DEBIAN-12 packages installation](#orgfb82b2e)
+1.  [DEBIAN-12 lxc playbook](#orgab6d79e)
+2.  [DEBIAN-12 packages installation](#org57e8258)
 
 
-<a id="org689b0de"></a>
+<a id="orgcfa3fa6"></a>
 
 ### DEBIAN-12 LXC initial setup
 
@@ -102,14 +107,14 @@ LXC
     its name, state (running, stopped), and other relevant information like IP
     addresses.
 
-5.  **Ansible** playbook that performs all previous task on host tsc-host-1.
+5.  **Ansible** playbook that performs all previous task on host your host.
 
-    Below there is an Ansible playbook that sets up the DEBIAN-12 container (lxc) on the
-    host **tsc-host-1**, performing all the tasks you've outlined:
+    Below there is an Ansible playbook that sets up the DEBIAN-12 container (lxc) on
+    your host performing all the tasks you've outlined:
     
         ---
         - name: Set up LXC container for a DEBIAN-12
-          hosts: uberrimus # here should be tsc-host-1 instead
+          hosts: localhost # here should be tsc-host-1 instead
           become: yes
           vars_files:
             - vars.yml
@@ -183,16 +188,16 @@ LXC
         
             - name: Check if {{ DEST }} container exists
               command: lxc-ls | grep {{ DEST }}
-              register: tsc_exists
+              register: container_exists
               ignore_errors: yes
         
             # - name: Output inventory sources
             #   debug:
             #     var: hostvars[inventory_hostname]['ansible_inventory_sources']
         
-            # - name: Output tsc_exists
+            # - name: Output container_exists
             #   debug:
-            #     var: tsc_exists
+            #     var: container_exists
         
             - name: Check if {{ DEST }} container exists
               command: lxc-ls --fancy
@@ -202,7 +207,7 @@ LXC
               command: lxc-ls --running | grep {{ DEST }}
               register: container_status
               ignore_errors: yes
-              when: tsc_exists.rc == 0
+              when: container_exists.rc == 0
         
             # - name: Output value of container_status
             #   debug:
@@ -215,7 +220,7 @@ LXC
         
             - name: Destroy {{ DEST }} container if it exists
               command: lxc-destroy -n {{ DEST }}
-              when: DEST in tsc_exists.stdout
+              when: DEST in container_exists.stdout
         
             - name: Create directory for {{ DEST }} container
               file:
@@ -411,28 +416,28 @@ LXC
                 sudo cp /etc/ssh/ssh_host* ssh-keys/DEBIAN-12-0
                 sudo mkdir -p ssh-keys/shared
                 ssh-keygen -t rsa -b 2048 -f ./ssh-keys/shared/id_rsa_lxc
-        
-        1.  `Adjust your inventory file to include tsc-host-1.`
             
-                # this file is inventory.ini in the root of the project
-                [lxc_hosts]
-                uberrimus ansible_host=127.0.0.1
-                tpcc-host-1 ansible_host=172.30.2.3
-                [lxc_guests]
-                DEBIAN-12-0 ansible_hosts=10.0.3.10
-                DEBIAN-12-0 ansible_user=concesion
-                DEBIAN-12 ansible_hosts=10.0.3.11
-                DEBIAN-12 ansible_user=concesion
-                DEBIAN-12-2 ansible_hosts=10.0.3.12
-                DEBIAN-12-2 ansible_user=concesion
+            1.  `Adjust your inventory file to include your host instead of localhost`
+                
+                    # this file is inventory.ini in the root of the project
+                    [lxc_hosts]
+                    localhost ansible_host=127.0.0.1
+                    tpcc-host-1 ansible_host=172.30.2.3
+                    [lxc_guests]
+                    DEBIAN-12-0 ansible_hosts=10.0.3.10
+                    DEBIAN-12-0 ansible_user=concesion
+                    DEBIAN-12 ansible_hosts=10.0.3.11
+                    DEBIAN-12 ansible_user=concesion
+                    DEBIAN-12-2 ansible_hosts=10.0.3.12
+                    DEBIAN-12-2 ansible_user=concesion
         
-        2.  Run the playbook with:
+        4.  Run the playbook with:
             
                 cd ansible
                 ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12-0"
 
 
-<a id="org877ef00"></a>
+<a id="org62c0d8a"></a>
 
 ### DEBIAN-12 packages installation.
 

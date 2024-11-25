@@ -13,10 +13,12 @@
 
 * RSS LXC Containers
 
-This note contains some recipes for creating and configuring LXC containers to
-run:
+This note contains some recipes for creating and configuring LXC containers.
 
-1. DEBIAN-12.
+** TL;DR
+
+Todo esto está disponible para consultar y clonar en [[https://github.com/ceblan/Howto-LXC][github/ceblan/howto_LXC]] 
+
 
 ** DEBIAN-12 setup
 
@@ -109,18 +111,18 @@ This command will display a table with details about each container, including
 its name, state (running, stopped), and other relevant information like IP
 addresses.
 
-**** *Ansible* playbook that performs all previous task on host tsc-host-1.
+**** *Ansible* playbook that performs all previous task on host your host.
 :PROPERTIES:
 :ID:       214611e0-4085-451e-bfb1-fba2f6a2152e
 :END:
 
-Below there is an Ansible playbook that sets up the DEBIAN-12 container (lxc) on the
-host *tsc-host-1*, performing all the tasks you've outlined:
+Below there is an Ansible playbook that sets up the DEBIAN-12 container (lxc) on
+your host performing all the tasks you've outlined:
 
 #+begin_src yaml :tangle ansible/tasks/create-lxc-DEBIAN-12.yml
   ---
   - name: Set up LXC container for a DEBIAN-12
-    hosts: uberrimus # here should be tsc-host-1 instead
+    hosts: localhost # here should be tsc-host-1 instead
     become: yes
     vars_files:
       - vars.yml
@@ -194,16 +196,16 @@ host *tsc-host-1*, performing all the tasks you've outlined:
 
       - name: Check if {{ DEST }} container exists
         command: lxc-ls | grep {{ DEST }}
-        register: tsc_exists
+        register: container_exists
         ignore_errors: yes
 
       # - name: Output inventory sources
       #   debug:
       #     var: hostvars[inventory_hostname]['ansible_inventory_sources']
 
-      # - name: Output tsc_exists
+      # - name: Output container_exists
       #   debug:
-      #     var: tsc_exists
+      #     var: container_exists
 
       - name: Check if {{ DEST }} container exists
         command: lxc-ls --fancy
@@ -213,7 +215,7 @@ host *tsc-host-1*, performing all the tasks you've outlined:
         command: lxc-ls --running | grep {{ DEST }}
         register: container_status
         ignore_errors: yes
-        when: tsc_exists.rc == 0
+        when: container_exists.rc == 0
 
       # - name: Output value of container_status
       #   debug:
@@ -226,7 +228,7 @@ host *tsc-host-1*, performing all the tasks you've outlined:
 
       - name: Destroy {{ DEST }} container if it exists
         command: lxc-destroy -n {{ DEST }}
-        when: DEST in tsc_exists.stdout
+        when: DEST in container_exists.stdout
 
       - name: Create directory for {{ DEST }} container
         file:
@@ -429,14 +431,12 @@ host *tsc-host-1*, performing all the tasks you've outlined:
       ssh-keygen -t rsa -b 2048 -f ./ssh-keys/shared/id_rsa_lxc
    #+end_src
  
-   
-
-4. =Adjust your inventory file to include tsc-host-1.=
+  4. =Adjust your inventory file to include your host instead of localhost=
 
    #+begin_src conf :tangle no
      # this file is inventory.ini in the root of the project
      [lxc_hosts]
-     uberrimus ansible_host=127.0.0.1
+     localhost ansible_host=127.0.0.1
      tpcc-host-1 ansible_host=172.30.2.3
      [lxc_guests]
      DEBIAN-12-0 ansible_hosts=10.0.3.10

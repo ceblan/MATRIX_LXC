@@ -1,6 +1,6 @@
 ---
 - name: Set up LXC container for a DEBIAN-12
-  hosts: uberrimus # here should be tsc-host-1 instead
+  hosts: localhost # here should be tsc-host-1 instead
   become: yes
   vars_files:
     - vars.yml
@@ -74,16 +74,16 @@
 
     - name: Check if {{ DEST }} container exists
       command: lxc-ls | grep {{ DEST }}
-      register: tsc_exists
+      register: container_exists
       ignore_errors: yes
 
     # - name: Output inventory sources
     #   debug:
     #     var: hostvars[inventory_hostname]['ansible_inventory_sources']
 
-    # - name: Output tsc_exists
+    # - name: Output container_exists
     #   debug:
-    #     var: tsc_exists
+    #     var: container_exists
 
     - name: Check if {{ DEST }} container exists
       command: lxc-ls --fancy
@@ -93,7 +93,7 @@
       command: lxc-ls --running | grep {{ DEST }}
       register: container_status
       ignore_errors: yes
-      when: tsc_exists.rc == 0
+      when: container_exists.rc == 0
 
     # - name: Output value of container_status
     #   debug:
@@ -106,7 +106,7 @@
 
     - name: Destroy {{ DEST }} container if it exists
       command: lxc-destroy -n {{ DEST }}
-      when: DEST in tsc_exists.stdout
+      when: DEST in container_exists.stdout
 
     - name: Create directory for {{ DEST }} container
       file:
