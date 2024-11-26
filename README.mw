@@ -1,22 +1,3 @@
-<div id="table-of-contents" role="doc-toc">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents" role="doc-toc">
-<ul>
-<li><a href="#org813adbe">1. RSS LXC Containers</a>
-<ul>
-<li><a href="#org0592eb6">1.1. TL;DR</a></li>
-<li><a href="#orgb705907">1.2. DEBIAN-12 setup</a>
-<ul>
-<li><a href="#org8138f2b">1.2.1. DEBIAN-12 LXC initial setup</a></li>
-<li><a href="#org77b13a9">1.2.2. DEBIAN-12 packages installation.</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</div>
-</div>
-
 = RSS LXC Containers =
 This note contains some recipes for creating and configuring LXC containers.
 
@@ -28,7 +9,7 @@ Todo esto está disponible para consultar y clonar en [https://github.com/ceblan
 We split the DEBIAN-12 set up in three stages, each one with its own ansible
 playbook:
 
-#DEBIAN-12 lxc playbook (See section 1.2.1.5)
+#DEBIAN-12 lxc playbook (See section 1.2.1.8)
 
 #DEBIAN-12 packages installation (See section 1.2.2.1)
 
@@ -99,6 +80,32 @@ command:
 This command will display a table with details about each container, including
 its name, state (running, stopped), and other relevant information like IP
 addresses.
+
+
+==== How to tar a container to share it to other machine ====
+#Stop the container 
+
+    sudo lxc-stop -n DEBIAN-12
+
+#Tar the container directory 
+
+    cd /var/lib/lxc tar --numeric-owner -cvjf DEBIAN-12-1_fs.tar.bz2 DEBIAN-12-1
+
+
+==== How to untar shared container ====
+#Tar the container directory 
+
+    cd /var/lib/lxc tar --numeric-owner -xvjf DEBIAN-12-1_fs.tar.bz2
+
+==== How to copy/clone a container ====
+#Stop the container 
+
+    sudo lxc-stop -n DEBIAN-12
+
+#copy container DEBIAN-12 a DEBIAN-12-copy 
+
+    sudo lxc-copy -n DEBIAN-12 -N DEBIAN-12-copy
+
 
 ==== '''Ansible''' playbook that performs all previous task on host your host. ====
 Below there is an Ansible playbook that sets up the DEBIAN-12 container (lxc) on
@@ -387,45 +394,42 @@ your host performing all the tasks you've outlined:
 ===== Notes: =====
 #Clonar el repositorio con la configuración de ansible 
 
-
     # this file is ansible.cfg in the root of the project
-	git clone https://github.com/ceblan/Howto-LXC.git cd Howto-LXC
+    git clone https://github.com/ceblan/Howto-LXC.git cd Howto-LXC
 
 #<tt>Ensure you have =ansible</tt> installed and configured on your control machine. It's recommended to have ssh keys to access the hosts and guests. 
 
     # this file is ansible.cfg in the root of the project
-	[defaults] inventory = hosts
-	private_key_file = ~/.ssh/id_rsa_lxc # create thix key for the project
-	remote_user = concesion
+    [defaults]
+    inventory = hosts
+    private_key_file = ~/.ssh/id_rsa_lxc # create thix key for the project
+    remote_user = concesion
 
 #Ensure you create a directory ''ssh-keys'' with with the host-keys and the shared-keys to avoid ssh problems when container is regenerated 
 
     # this file is ansible.cfg in the root of the project
-	sudo mkdir -p ssh-keys/DEBIAN-12-0
-	sudo cp /etc/ssh/ssh_host* ssh-keys/DEBIAN-12-0
-	sudo mkdir -p ssh-keys/shared
-	ssh-keygen -t rsa -b 2048 -f ./ssh-keys/shared/id_rsa_lxc
+    sudo mkdir -p ssh-keys/DEBIAN-12-0
+    sudo cp /etc/ssh/ssh_host* ssh-keys/DEBIAN-12-0
+    sudo mkdir -p ssh-keys/shared ssh-keygen -t rsa -b 2048 -f ./ssh-keys/shared/id_rsa_lxc 
 
-
-
-#<tt>Adjust your inventory file to include tsc-host-1.</tt> 
+##<tt>Adjust your inventory file to include your host instead of localhost</tt>  
 
     # this file is inventory.ini in the root of the project
-	[lxc_hosts]
-	localhost ansible_host=127.0.0.1
-	tpcc-host-1 ansible_host=172.30.2.3
-	[lxc_guests]
-	DEBIAN-12-0 ansible_hosts=10.0.3.10
-	DEBIAN-12-0 ansible_user=concesion
-	DEBIAN-12 ansible_hosts=10.0.3.11
-	DEBIAN-12 ansible_user=concesion
-	DEBIAN-12-2 ansible_hosts=10.0.3.12
-	DEBIAN-12-2 ansible_user=concesion
+    [lxc_hosts]
+    localhost ansible_host=127.0.0.1
+    tpcc-host-1 ansible_host=172.30.2.3
+    [lxc_guests]
+    DEBIAN-12-0 ansible_hosts=10.0.3.10
+    DEBIAN-12-0 ansible_user=concesion
+    DEBIAN-12 ansible_hosts=10.0.3.11
+    DEBIAN-12 ansible_user=concesion
+    DEBIAN-12-2 ansible_hosts=10.0.3.12
+    DEBIAN-12-2 ansible_user=concesion
 
 #Run the playbook with: 
 
-    cd ansible ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12"
-
+    cd ansible
+    ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12-0"
 
 === DEBIAN-12 packages installation. ===
 ==== Various packages ====

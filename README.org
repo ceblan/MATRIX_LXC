@@ -111,6 +111,47 @@ This command will display a table with details about each container, including
 its name, state (running, stopped), and other relevant information like IP
 addresses.
 
+
+**** How to tar a container to share it to other machine
+
+1. Stop the container
+
+   #+begin_src shell :tangle no
+   sudo lxc-stop -n DEBIAN-12
+   #+end_src
+
+2. Tar the container directory
+   
+   #+begin_src shell :tangle no
+     cd /var/lib/lxc
+     tar --numeric-owner -cvjf DEBIAN-12-1_fs.tar.bz2 DEBIAN-12-1
+   #+end_src
+
+
+**** How to untar shared container 
+
+1. Tar the container directory
+   
+   #+begin_src shell :tangle no
+     cd /var/lib/lxc
+     tar --numeric-owner -xvjf DEBIAN-12-1_fs.tar.bz2
+   #+end_src
+
+**** How to copy/clone a container
+
+1. Stop the container
+
+   #+begin_src shell :tangle no
+   sudo lxc-stop -n DEBIAN-12
+   #+end_src
+
+2. copy container DEBIAN-12 a DEBIAN-12-copy
+   
+   #+begin_src shell :tangle no
+     sudo lxc-copy -n DEBIAN-12 -N DEBIAN-12-copy
+   #+end_src
+
+
 **** *Ansible* playbook that performs all previous task on host your host.
 :PROPERTIES:
 :ID:       214611e0-4085-451e-bfb1-fba2f6a2152e

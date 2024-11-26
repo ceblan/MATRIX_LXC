@@ -1,39 +1,39 @@
 
 # Table of Contents
 
-1.  [RSS LXC Containers](#orgc31d114)
-    1.  [TL;DR](#org1098e50)
-    2.  [DEBIAN-12 setup](#org78376ba)
-        1.  [DEBIAN-12 LXC initial setup](#orgcfa3fa6)
-        2.  [DEBIAN-12 packages installation.](#org62c0d8a)
+1.  [RSS LXC Containers](#org316e152)
+    1.  [TL;DR](#org86291b6)
+    2.  [DEBIAN-12 setup](#org3e60d38)
+        1.  [DEBIAN-12 LXC initial setup](#orgd1f4228)
+        2.  [DEBIAN-12 packages installation.](#org5851f9b)
 
 
-<a id="orgc31d114"></a>
+<a id="org316e152"></a>
 
 # RSS LXC Containers
 
 This note contains some recipes for creating and configuring LXC containers.
 
 
-<a id="org1098e50"></a>
+<a id="org86291b6"></a>
 
 ## TL;DR
 
 Todo esto está disponible para consultar y clonar en [github/ceblan/howto<sub>LXC</sub>](https://github.com/ceblan/Howto-LXC) 
 
 
-<a id="org78376ba"></a>
+<a id="org3e60d38"></a>
 
 ## DEBIAN-12 setup
 
 We split the DEBIAN-12 set up in three stages, each one with its own ansible
 playbook:
 
-1.  [DEBIAN-12 lxc playbook](#orgab6d79e)
-2.  [DEBIAN-12 packages installation](#org57e8258)
+1.  [DEBIAN-12 lxc playbook](#org09819db)
+2.  [DEBIAN-12 packages installation](#orgf3a22a0)
 
 
-<a id="orgcfa3fa6"></a>
+<a id="orgd1f4228"></a>
 
 ### DEBIAN-12 LXC initial setup
 
@@ -107,7 +107,35 @@ LXC
     its name, state (running, stopped), and other relevant information like IP
     addresses.
 
-5.  **Ansible** playbook that performs all previous task on host your host.
+5.  How to tar a container to share it to other machine
+
+    1.  Stop the container
+        
+            sudo lxc-stop -n DEBIAN-12
+    
+    2.  Tar the container directory
+        
+            cd /var/lib/lxc
+            tar --numeric-owner -cvjf DEBIAN-12-1_fs.tar.bz2 DEBIAN-12-1
+
+6.  How to untar shared container
+
+    1.  Tar the container directory
+        
+            cd /var/lib/lxc
+            tar --numeric-owner -xvjf DEBIAN-12-1_fs.tar.bz2
+
+7.  How to copy/clone a container
+
+    1.  Stop the container
+        
+            sudo lxc-stop -n DEBIAN-12
+    
+    2.  copy container DEBIAN-12 a DEBIAN-12-copy
+        
+            sudo lxc-copy -n DEBIAN-12 -N DEBIAN-12-copy
+
+8.  **Ansible** playbook that performs all previous task on host your host.
 
     Below there is an Ansible playbook that sets up the DEBIAN-12 container (lxc) on
     your host performing all the tasks you've outlined:
@@ -437,7 +465,7 @@ LXC
                 ansible-playbook -i inventory.ini tasks/create-lxc-DEBIAN-12.yml --extra-vars "DEST=DEBIAN-12-0"
 
 
-<a id="org62c0d8a"></a>
+<a id="org5851f9b"></a>
 
 ### DEBIAN-12 packages installation.
 
