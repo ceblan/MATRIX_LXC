@@ -197,11 +197,23 @@
     - name: Set root password for {{ DEST }}
       command: lxc-attach -n {{ DEST }} -- sh -c "echo 'root:finiquito' | chpasswd"
 
-    - name: Create user {{ ansible_env.USER }}
+    - name: Create user {{ emacs_username }}
       command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 {{ emacs_username }}
+
+    - name: Create group inside container (GID 300)
+      command: lxc-attach -n {{ DEST }} -- bash -c "groupadd -g 300 devpl"
 
     - name: Create user {{ emacs_username }} with password
       command: lxc-attach -n {{ DEST }} -- sh -c "echo '{{ emacs_username }}:{{ emacs_username }}' | chpasswd"
+
+    - name: Add user {{ emacs_username }} to the devpl group
+      command: lxc-attach -n {{ DEST }} -- usermod -aG devpl {{ emacs_username }}
+
+    - name: create git-carlos
+      command: lxc-attach -n {{ DEST }} -- mkdir -p /home/{{ emacs_username }}/git-carlos
+
+    - name: create git-carlos
+      command: lxc-attach -n {{ DEST }} -- chown {{ emacs_username }}:devpl /home/{{ emacs_username }}/git-carlos
 
     - name: Add user {{ emacs_username }} to the sudo group
       command: lxc-attach -n {{ DEST }} -- usermod -aG sudo {{ emacs_username }}
@@ -268,6 +280,33 @@
 
     - name: Update sources
       command: lxc-attach -n {{ DEST }} -- sh -c "apt-get update"
+
+    - name: Stop {{ DEST }} container if it is running
+      command: lxc-stop -n {{ DEST }}
+      ignore_errors: yes
+      when: container_status.stdout != "" and  DEST in container_status.stdout_lines
+
+    - name: Add mount entry to /bar/baz
+      lineinfile:
+        path: /var/lib/lxc/{{ DEST }}/config
+        line: "lxc.mount.entry = /home/sice/git-sice /home/{{ emacs_username}}/git-carlos none bind 0 0"
+        create: yes # Create the file if it doesn't exist
+        state: present # Ensure the line is present
+
+    - name: Remove lines containing {{ DEST }} from dnsmasq leases file
+      command: sed -i '/{{ DEST }}/d' /var/lib/misc/dnsmasq.lxcbr0.leases
+
+    - name: Restart lxc-net service
+      systemd:
+        name: lxc-net
+        state: restarted
+
+    - name: Start LXC container {{ DEST }}
+      command: lxc-start -n {{ DEST }}
+      when: "DEST not in lxc_list.stdout"
+
+    - name: Pause for 3 seconds (using command)
+      command: sleep 3
 
     - name: List all LXC containers
       command: lxc-ls -f
