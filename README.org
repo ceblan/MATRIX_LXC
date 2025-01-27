@@ -330,10 +330,10 @@ host *tsc-host-1*, performing all the tasks you've outlined:
         command: lxc-attach -n {{ DEST }} -- usermod -aG devpl {{ emacs_username }}
 
       - name: create git-carlos
-        command: lxc-attach -n {{ DEST }} -- mkdir -p /home/{{ emacs_username }}/git-carlos
+        command: lxc-attach -n {{ DEST }} -- mkdir -p /git-carlos
 
-      - name: create git-carlos
-        command: lxc-attach -n {{ DEST }} -- chown {{ emacs_username }}:devpl /home/{{ emacs_username }}/git-carlos
+      - name: chown git-carlos
+        command: lxc-attach -n {{ DEST }} -- chown {{ emacs_username }}:devpl /git-carlos
 
       - name: Add user {{ emacs_username }} to the sudo group
         command: lxc-attach -n {{ DEST }} -- usermod -aG sudo {{ emacs_username }}
@@ -409,7 +409,7 @@ host *tsc-host-1*, performing all the tasks you've outlined:
       - name: Add mount entry to /bar/baz
         lineinfile:
           path: /var/lib/lxc/{{ DEST }}/config
-          line: "lxc.mount.entry = /home/sice/git-sice /home/{{ emacs_username}}/git-carlos none bind 0 0"
+          line: "lxc.mount.entry = /home/sice/git-sice git-carlos none bind 0 0"
           create: yes # Create the file if it doesn't exist
           state: present # Ensure the line is present
 
