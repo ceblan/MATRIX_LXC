@@ -330,10 +330,10 @@ host *tsc-host-1*, performing all the tasks you've outlined:
         command: lxc-attach -n {{ DEST }} -- usermod -aG devpl {{ emacs_username }}
 
       - name: create git-carlos
-        command: lxc-attach -n {{ DEST }} -- mkdir -p /git-carlos
+        command: lxc-attach -n {{ DEST }} -- mkdir -p /home/{{ emacs_username }}/git-carlos
 
       - name: chown git-carlos
-        command: lxc-attach -n {{ DEST }} -- chown {{ emacs_username }}:devpl /git-carlos
+        command: lxc-attach -n {{ DEST }} -- chown {{ emacs_username }}:{{ emacs_username }} /home/{{ emacs_username }}/git-carlos
 
       - name: Add user {{ emacs_username }} to the sudo group
         command: lxc-attach -n {{ DEST }} -- usermod -aG sudo {{ emacs_username }}
@@ -401,17 +401,21 @@ host *tsc-host-1*, performing all the tasks you've outlined:
       - name: Update sources
         command: lxc-attach -n {{ DEST }} -- sh -c "apt-get update"
 
+      - name: Add mount entry to git-carlos
+        lineinfile:
+          path: /var/lib/lxc/{{ DEST }}/config
+          line: "lxc.mount.entry = /home/sice/git-sice /home/tsc/git-carlos none bind 0 0"
+          create: yes # Create the file if it doesn't exist
+          state: present # Ensure the line is present
+
       - name: Stop {{ DEST }} container if it is running
         command: lxc-stop -n {{ DEST }}
         ignore_errors: yes
-        when: container_status.stdout != "" and  DEST in container_status.stdout_lines
 
-      - name: Add mount entry to /bar/baz
-        lineinfile:
-          path: /var/lib/lxc/{{ DEST }}/config
-          line: "lxc.mount.entry = /home/sice/git-sice git-carlos none bind 0 0"
-          create: yes # Create the file if it doesn't exist
-          state: present # Ensure the line is present
+      - name: Pause for 10 seconds
+        wait_for:
+          delay: 1
+          timeout: 3
 
       - name: Remove lines containing {{ DEST }} from dnsmasq leases file
         command: sed -i '/{{ DEST }}/d' /var/lib/misc/dnsmasq.lxcbr0.leases
@@ -421,12 +425,19 @@ host *tsc-host-1*, performing all the tasks you've outlined:
           name: lxc-net
           state: restarted
 
-      - name: Start LXC container {{ DEST }}
-        command: lxc-start -n {{ DEST }}
-        when: "DEST not in lxc_list.stdout"
+      - name: Pause for 10 seconds
+        wait_for:
+          delay: 1
+          timeout: 3
 
-      - name: Pause for 3 seconds (using command)
-        command: sleep 3
+#      - name: Start LXC container {{ DEST }}
+#        command: lxc-start -n {{ DEST }}
+
+      - name: Pause for 10 seconds
+        wait_for:
+          delay: 1
+          timeout: 3
+
 
       - name: List all LXC containers
         command: lxc-ls -f
