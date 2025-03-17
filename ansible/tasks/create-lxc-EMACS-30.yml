@@ -1,6 +1,6 @@
 ---
 - name: Set up LXC container for a EMACS-30
-  hosts: uberrimus # here should be tsc-host-1 instead
+  hosts: pindaro # here should be tsc-host-1 instead
   become: yes
   vars_files:
     - vars.yml
@@ -9,16 +9,16 @@
 
   tasks:
     - name: Install LXC
-      apt:
+      dnf:
         name: lxc
         state: present
         update_cache: yes
 
-    - name: Uncomment LXC_DHCP_CONFILE in dnsmasq.conf
-      lineinfile:
-        path: /etc/default/lxc-net
-        regexp: '^#LXC_DHCP_CONFILE'
-        line: 'LXC_DHCP_CONFILE=/etc/dnsmasq.conf'
+    # - name: Uncomment LXC_DHCP_CONFILE in dnsmasq.conf
+    #   lineinfile:
+    #     path: /etc/default/lxc-net
+    #     regexp: '^#LXC_DHCP_CONFILE'
+    #     line: 'LXC_DHCP_CONFILE=/etc/dnsmasq.conf'
 
     - name: Ensure the directory for SSH keys exists
       file:
@@ -143,7 +143,7 @@
     - name: Create symlink for dnsmasq.conf
       file:
         src: /etc/lxc/dnsmasq.conf
-        dest: /etc/dnsmasq.conf
+        dest: /etc/dnsmasq.d/lxc.conf
         state: link
 
     - name: Remove lines containing {{ DEST }} from dnsmasq leases file
@@ -197,26 +197,26 @@
     - name: Set root password for {{ DEST }}
       command: lxc-attach -n {{ DEST }} -- sh -c "echo 'root:finiquito' | chpasswd"
 
-    - name: Create user {{ emacs_username }}
-      command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 {{ emacs_username }}
+    - name: Create user {{ lxc_username }}
+      command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 {{ lxc_username }}
 
     - name: Create group inside container (GID 300)
       command: lxc-attach -n {{ DEST }} -- bash -c "groupadd -g 300 devpl"
 
-    - name: Create user {{ emacs_username }} with password
-      command: lxc-attach -n {{ DEST }} -- sh -c "echo '{{ emacs_username }}:{{ emacs_username }}' | chpasswd"
+    - name: Create user {{ lxc_username }} with password
+      command: lxc-attach -n {{ DEST }} -- sh -c "echo '{{ lxc_username }}:{{ lxc_username }}' | chpasswd"
 
-    - name: Add user {{ emacs_username }} to the devpl group
-      command: lxc-attach -n {{ DEST }} -- usermod -aG devpl {{ emacs_username }}
+    - name: Add user {{ lxc_username }} to the devpl group
+      command: lxc-attach -n {{ DEST }} -- usermod -aG devpl {{ lxc_username }}
 
     - name: create git-carlos
-      command: lxc-attach -n {{ DEST }} -- mkdir -p /home/{{ emacs_username }}/git-carlos
+      command: lxc-attach -n {{ DEST }} -- mkdir -p /home/{{ lxc_username }}/git-carlos
 
     - name: chown git-carlos
-      command: lxc-attach -n {{ DEST }} -- chown {{ emacs_username }}:{{ emacs_username }} /home/{{ emacs_username }}/git-carlos
+      command: lxc-attach -n {{ DEST }} -- chown {{ lxc_username }}:{{ lxc_username }} /home/{{ lxc_username }}/git-carlos
 
-    - name: Add user {{ emacs_username }} to the sudo group
-      command: lxc-attach -n {{ DEST }} -- usermod -aG sudo {{ emacs_username }}
+    - name: Add user {{ lxc_username }} to the sudo group
+      command: lxc-attach -n {{ DEST }} -- usermod -aG sudo {{ lxc_username }}
 
     - name: Allow members of the sudo group to run sudo without a password
       become: yes
@@ -229,30 +229,30 @@
     - name: Restart sudo
       command: lxc-attach -n {{ DEST }} -- /etc/init.d/sudo restart
 
-    - name: Create dir /home/{{ emacs_username }}/.ssh
-      command: lxc-attach -n {{ DEST }} -- sh -c "mkdir -p /home/{{ emacs_username }}/.ssh; chown -R {{ emacs_username }}:{{ emacs_username }} /home/{{ emacs_username }}/.ssh"
+    - name: Create dir /home/{{ lxc_username }}/.ssh
+      command: lxc-attach -n {{ DEST }} -- sh -c "mkdir -p /home/{{ lxc_username }}/.ssh; chown -R {{ lxc_username }}:{{ lxc_username }} /home/{{ lxc_username }}/.ssh"
 
     - name: Get list of SSH shared keys
       shell: "find {{ playbook_dir }}/files/ssh-keys/shared -name 'id_rsa_lxc*'"
       register: ssh_shared_keys_files
 
-    - name: Copy SSH shared keys to /var/lib/lxc/{{ DEST }}/rootfs/home/{{ emacs_username }}/.ssh/
+    - name: Copy SSH shared keys to /var/lib/lxc/{{ DEST }}/rootfs/home/{{ lxc_username }}/.ssh/
       copy:
         src: "{{ item }}"
-        dest: "/var/lib/lxc/{{ DEST }}/rootfs/home/{{ emacs_username }}/.ssh/"
+        dest: "/var/lib/lxc/{{ DEST }}/rootfs/home/{{ lxc_username }}/.ssh/"
         owner: root
         group: root
         mode: '0600'
       with_items: "{{ ssh_shared_keys_files.stdout_lines }}"
 
     - name: Change public keys permissions after copy
-      shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/home/{{ emacs_username }}/.ssh/*pub"
+      shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/home/{{ lxc_username }}/.ssh/*pub"
 
     - name: Generate authorized_keys
-      command: lxc-attach -n {{ DEST }} -- sh -c "cat /home/{{ emacs_username }}/.ssh/id_rsa_lxc.pub > /home/{{ emacs_username }}/.ssh/authorized_keys; chmod 600  /home/{{ emacs_username }}/.ssh/authorized_keys"
+      command: lxc-attach -n {{ DEST }} -- sh -c "cat /home/{{ lxc_username }}/.ssh/id_rsa_lxc.pub > /home/{{ lxc_username }}/.ssh/authorized_keys; chmod 600  /home/{{ lxc_username }}/.ssh/authorized_keys"
 
     - name: Create dir /home/concesion/.ssh
-      command: lxc-attach -n {{ DEST }} -- sh -c "chown -R {{ emacs_username }}:{{ emacs_username }} /home/{{ emacs_username }}/.ssh"
+      command: lxc-attach -n {{ DEST }} -- sh -c "chown -R {{ lxc_username }}:{{ lxc_username }} /home/{{ lxc_username }}/.ssh"
 
     - name: Install packages (batch 1)
       command: lxc-attach -n {{ DEST }} -- sh -c "apt-get install -y {{ item }}"
@@ -273,20 +273,19 @@
         - "deb-src http://security.debian.org/debian-security bookworm-security main contrib non-free-firmware"
         - "deb http://deb.debian.org/debian/ bookworm-updates main contrib non-free-firmware"
         - "deb-src http://deb.debian.org/debian/ bookworm-updates main contrib non-free-firmware"
-        - "deb [arch=amd64,i386] http://www.deb-multimedia.org bookworm main non-free"
 
-    - name: Get keys for web.deb-multimedia.org
-      command: lxc-attach -n {{ DEST }} -- sh -c "wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2016.8.1_all.deb; dpkg -i deb-multimedia-keyring_2016.8.1_all.deb"
+    # - name: Get keys for web.deb-multimedia.org
+    #   command: lxc-attach -n {{ DEST }} -- sh -c "wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2016.8.1_all.deb; dpkg -i deb-multimedia-keyring_2016.8.1_all.deb"
 
     - name: Update sources
       command: lxc-attach -n {{ DEST }} -- sh -c "apt-get update"
 
-    - name: Add mount entry to git-carlos
-      lineinfile:
-        path: /var/lib/lxc/{{ DEST }}/config
-        line: "lxc.mount.entry = /home/sice/git-sice home/tsc/git-carlos none bind 0 0"
-        create: yes # Create the file if it doesn't exist
-        state: present # Ensure the line is present
+    # - name: Add mount entry to git-carlos
+    #   lineinfile:
+    #     path: /var/lib/lxc/{{ DEST }}/config
+    #     line: "lxc.mount.entry = /home/sice/git-sice home/tsc/git-carlos none bind 0 0"
+    #     create: yes # Create the file if it doesn't exist
+    #     state: present # Ensure the line is present
 
     - name: Stop {{ DEST }} container if it is running
       command: lxc-stop -n {{ DEST }}

@@ -119,10 +119,11 @@ addresses.
 Below there is an Ansible playbook that sets up the EMACS-30 container (lxc) on the
 host *tsc-host-1*, performing all the tasks you've outlined:
 
-#+begin_src yaml :tangle (concat (org-entry-get nil "OUT_DIR" t) "create-lxc" (org-entry-get nil "LXC_NAME") ".yml") 
+#+begin_src yaml :tangle ansible/tasks/create-lxc-EMACS-30.yml
+
   ---
   - name: Set up LXC container for a EMACS-30
-    hosts: uberrimus # here should be tsc-host-1 instead
+    hosts: pindaro # here should be tsc-host-1 instead
     become: yes
     vars_files:
       - vars.yml
@@ -131,16 +132,16 @@ host *tsc-host-1*, performing all the tasks you've outlined:
 
     tasks:
       - name: Install LXC
-        apt:
+        dnf:
           name: lxc
           state: present
           update_cache: yes
 
-      - name: Uncomment LXC_DHCP_CONFILE in dnsmasq.conf
-        lineinfile:
-          path: /etc/default/lxc-net
-          regexp: '^#LXC_DHCP_CONFILE'
-          line: 'LXC_DHCP_CONFILE=/etc/dnsmasq.conf'
+      # - name: Uncomment LXC_DHCP_CONFILE in dnsmasq.conf
+      #   lineinfile:
+      #     path: /etc/default/lxc-net
+      #     regexp: '^#LXC_DHCP_CONFILE'
+      #     line: 'LXC_DHCP_CONFILE=/etc/dnsmasq.conf'
 
       - name: Ensure the directory for SSH keys exists
         file:
@@ -265,7 +266,7 @@ host *tsc-host-1*, performing all the tasks you've outlined:
       - name: Create symlink for dnsmasq.conf
         file:
           src: /etc/lxc/dnsmasq.conf
-          dest: /etc/dnsmasq.conf
+          dest: /etc/dnsmasq.d/lxc.conf
           state: link
 
       - name: Remove lines containing {{ DEST }} from dnsmasq leases file
@@ -395,10 +396,9 @@ host *tsc-host-1*, performing all the tasks you've outlined:
           - "deb-src http://security.debian.org/debian-security bookworm-security main contrib non-free-firmware"
           - "deb http://deb.debian.org/debian/ bookworm-updates main contrib non-free-firmware"
           - "deb-src http://deb.debian.org/debian/ bookworm-updates main contrib non-free-firmware"
-          - "deb [arch=amd64,i386] http://www.deb-multimedia.org bookworm main non-free"
 
-      - name: Get keys for web.deb-multimedia.org
-        command: lxc-attach -n {{ DEST }} -- sh -c "wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2016.8.1_all.deb; dpkg -i deb-multimedia-keyring_2016.8.1_all.deb"
+      # - name: Get keys for web.deb-multimedia.org
+      #   command: lxc-attach -n {{ DEST }} -- sh -c "wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2016.8.1_all.deb; dpkg -i deb-multimedia-keyring_2016.8.1_all.deb"
 
       - name: Update sources
         command: lxc-attach -n {{ DEST }} -- sh -c "apt-get update"
@@ -406,7 +406,14 @@ host *tsc-host-1*, performing all the tasks you've outlined:
       - name: Add mount entry to git-carlos
         lineinfile:
           path: /var/lib/lxc/{{ DEST }}/config
-          line: "lxc.mount.entry = /home/sice/git-sice home/tsc/git-carlos none bind 0 0"
+          line: "lxc.mount.entry = /home/sice/git-sice home/{{ lxc_username }}/git-carlos none bind 0 0"
+          create: yes # Create the file if it doesn't exist
+          state: present # Ensure the line is present
+
+      - name: Add mount entry to git-hub
+        lineinfile:
+          path: /var/lib/lxc/{{ DEST }}/config
+          line: "lxc.mount.entry = /home/carlos/git-carlos/git-hub home/{{ lxc_username }}/git-carlos none bind 0 0"
           create: yes # Create the file if it doesn't exist
           state: present # Ensure the line is present
 

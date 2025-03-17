@@ -12,7 +12,7 @@
       apt:
         name: lxc
         state: present
-        update_cache: yes
+        update_cache: yes #foo
 
     - name: Uncomment LXC_DHCP_CONFILE in dnsmasq.conf
       lineinfile:
