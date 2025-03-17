@@ -311,6 +311,14 @@ host *tsc-host-1*, performing all the tasks you've outlined:
           mode: '0600'
         with_items: "{{ ssh_key_files.stdout_lines }}"
 
+      - name: Change keys permissions after copy
+        shell: "chmod 600 {{ playbook_dir }}/files/ssh-keys/shared/*"
+        register: ssh_key_files
+
+      - name: Change keys permissions after copy
+        shell: "chmod 644 {{ playbook_dir }}/files/ssh-keys/shared/*pub"
+        register: ssh_key_files
+
       - name: Change public keys permissions after copy
         shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/etc/ssh/*pub"
 

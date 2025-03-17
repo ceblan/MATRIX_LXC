@@ -188,6 +188,14 @@
         mode: '0600'
       with_items: "{{ ssh_key_files.stdout_lines }}"
 
+    - name: Change keys permissions after copy
+      shell: "chmod 600 {{ playbook_dir }}/files/ssh-keys/shared/*"
+      register: ssh_key_files
+
+    - name: Change keys permissions after copy
+      shell: "chmod 644 {{ playbook_dir }}/files/ssh-keys/shared/*pub"
+      register: ssh_key_files
+
     - name: Change public keys permissions after copy
       shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/etc/ssh/*pub"
 
@@ -280,12 +288,19 @@
     - name: Update sources
       command: lxc-attach -n {{ DEST }} -- sh -c "apt-get update"
 
-    # - name: Add mount entry to git-carlos
-    #   lineinfile:
-    #     path: /var/lib/lxc/{{ DEST }}/config
-    #     line: "lxc.mount.entry = /home/sice/git-sice home/tsc/git-carlos none bind 0 0"
-    #     create: yes # Create the file if it doesn't exist
-    #     state: present # Ensure the line is present
+    - name: Add mount entry to git-carlos
+      lineinfile:
+        path: /var/lib/lxc/{{ DEST }}/config
+        line: "lxc.mount.entry = /home/sice/git-sice home/{{ lxc_username }}/git-carlos none bind 0 0"
+        create: yes # Create the file if it doesn't exist
+        state: present # Ensure the line is present
+
+    - name: Add mount entry to git-hub
+      lineinfile:
+        path: /var/lib/lxc/{{ DEST }}/config
+        line: "lxc.mount.entry = /home/carlos/git-carlos/git-hub home/{{ lxc_username }}/git-carlos none bind 0 0"
+        create: yes # Create the file if it doesn't exist
+        state: present # Ensure the line is present
 
     - name: Stop {{ DEST }} container if it is running
       command: lxc-stop -n {{ DEST }}
