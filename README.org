@@ -4,6 +4,8 @@
 :GPTEL_BACKEND: ChatGPT
 :GPTEL_SYSTEM: You are a large language model living in Emacs and a helpful assistant. Respond concisely.
 :GPTEL_BOUNDS: ((633 . 973) (989 . 1106) (1121 . 1214) (1229 . 1230) (1332 . 1388) (1403 . 1414) (1468 . 1495) (1510 . 1774) (1789 . 1845) (1933 . 2169) (2562 . 2564) (2644 . 2746) (2761 . 2762) (2767 . 2775) (2776 . 2952) (3093 . 3226) (6959 . 6985) (6990 . 6991) (6992 . 6993) (6996 . 7049) (7054 . 7055) (7059 . 7111) (7116 . 7117) (7121 . 7144) (7180 . 7200) (7214 . 7215) (7229 . 7233))
+:LXC_NAME: POLLAS
+:OUT_DIR: ansible/tasks/
 :END:
 
 #+OPTIONS: toc:nil
@@ -117,7 +119,7 @@ addresses.
 Below there is an Ansible playbook that sets up the EMACS-30 container (lxc) on the
 host *tsc-host-1*, performing all the tasks you've outlined:
 
-#+begin_src yaml :tangle ansible/tasks/create-lxc-EMACS-30.yml
+#+begin_src yaml :tangle (concat (org-entry-get nil "OUT_DIR" t) "create-lxc" (org-entry-get nil "LXC_NAME") ".yml") 
   ---
   - name: Set up LXC container for a EMACS-30
     hosts: uberrimus # here should be tsc-host-1 instead
@@ -317,26 +319,26 @@ host *tsc-host-1*, performing all the tasks you've outlined:
       - name: Set root password for {{ DEST }}
         command: lxc-attach -n {{ DEST }} -- sh -c "echo 'root:finiquito' | chpasswd"
 
-      - name: Create user {{ emacs_username }}
-        command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 {{ emacs_username }}
+      - name: Create user {{ lxc_username }}
+        command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 {{ lxc_username }}
 
       - name: Create group inside container (GID 300)
         command: lxc-attach -n {{ DEST }} -- bash -c "groupadd -g 300 devpl"
 
-      - name: Create user {{ emacs_username }} with password
-        command: lxc-attach -n {{ DEST }} -- sh -c "echo '{{ emacs_username }}:{{ emacs_username }}' | chpasswd"
+      - name: Create user {{ lxc_username }} with password
+        command: lxc-attach -n {{ DEST }} -- sh -c "echo '{{ lxc_username }}:{{ lxc_username }}' | chpasswd"
 
-      - name: Add user {{ emacs_username }} to the devpl group
-        command: lxc-attach -n {{ DEST }} -- usermod -aG devpl {{ emacs_username }}
+      - name: Add user {{ lxc_username }} to the devpl group
+        command: lxc-attach -n {{ DEST }} -- usermod -aG devpl {{ lxc_username }}
 
       - name: create git-carlos
-        command: lxc-attach -n {{ DEST }} -- mkdir -p /home/{{ emacs_username }}/git-carlos
+        command: lxc-attach -n {{ DEST }} -- mkdir -p /home/{{ lxc_username }}/git-carlos
 
       - name: chown git-carlos
-        command: lxc-attach -n {{ DEST }} -- chown {{ emacs_username }}:{{ emacs_username }} /home/{{ emacs_username }}/git-carlos
+        command: lxc-attach -n {{ DEST }} -- chown {{ lxc_username }}:{{ lxc_username }} /home/{{ lxc_username }}/git-carlos
 
-      - name: Add user {{ emacs_username }} to the sudo group
-        command: lxc-attach -n {{ DEST }} -- usermod -aG sudo {{ emacs_username }}
+      - name: Add user {{ lxc_username }} to the sudo group
+        command: lxc-attach -n {{ DEST }} -- usermod -aG sudo {{ lxc_username }}
 
       - name: Allow members of the sudo group to run sudo without a password
         become: yes
@@ -349,30 +351,30 @@ host *tsc-host-1*, performing all the tasks you've outlined:
       - name: Restart sudo
         command: lxc-attach -n {{ DEST }} -- /etc/init.d/sudo restart
 
-      - name: Create dir /home/{{ emacs_username }}/.ssh
-        command: lxc-attach -n {{ DEST }} -- sh -c "mkdir -p /home/{{ emacs_username }}/.ssh; chown -R {{ emacs_username }}:{{ emacs_username }} /home/{{ emacs_username }}/.ssh"
+      - name: Create dir /home/{{ lxc_username }}/.ssh
+        command: lxc-attach -n {{ DEST }} -- sh -c "mkdir -p /home/{{ lxc_username }}/.ssh; chown -R {{ lxc_username }}:{{ lxc_username }} /home/{{ lxc_username }}/.ssh"
 
       - name: Get list of SSH shared keys
         shell: "find {{ playbook_dir }}/files/ssh-keys/shared -name 'id_rsa_lxc*'"
         register: ssh_shared_keys_files
 
-      - name: Copy SSH shared keys to /var/lib/lxc/{{ DEST }}/rootfs/home/{{ emacs_username }}/.ssh/
+      - name: Copy SSH shared keys to /var/lib/lxc/{{ DEST }}/rootfs/home/{{ lxc_username }}/.ssh/
         copy:
           src: "{{ item }}"
-          dest: "/var/lib/lxc/{{ DEST }}/rootfs/home/{{ emacs_username }}/.ssh/"
+          dest: "/var/lib/lxc/{{ DEST }}/rootfs/home/{{ lxc_username }}/.ssh/"
           owner: root
           group: root
           mode: '0600'
         with_items: "{{ ssh_shared_keys_files.stdout_lines }}"
 
       - name: Change public keys permissions after copy
-        shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/home/{{ emacs_username }}/.ssh/*pub"
+        shell: "chmod 644 /var/lib/lxc/{{ DEST }}/rootfs/home/{{ lxc_username }}/.ssh/*pub"
 
       - name: Generate authorized_keys
-        command: lxc-attach -n {{ DEST }} -- sh -c "cat /home/{{ emacs_username }}/.ssh/id_rsa_lxc.pub > /home/{{ emacs_username }}/.ssh/authorized_keys; chmod 600  /home/{{ emacs_username }}/.ssh/authorized_keys"
+        command: lxc-attach -n {{ DEST }} -- sh -c "cat /home/{{ lxc_username }}/.ssh/id_rsa_lxc.pub > /home/{{ lxc_username }}/.ssh/authorized_keys; chmod 600  /home/{{ lxc_username }}/.ssh/authorized_keys"
 
       - name: Create dir /home/concesion/.ssh
-        command: lxc-attach -n {{ DEST }} -- sh -c "chown -R {{ emacs_username }}:{{ emacs_username }} /home/{{ emacs_username }}/.ssh"
+        command: lxc-attach -n {{ DEST }} -- sh -c "chown -R {{ lxc_username }}:{{ lxc_username }} /home/{{ lxc_username }}/.ssh"
 
       - name: Install packages (batch 1)
         command: lxc-attach -n {{ DEST }} -- sh -c "apt-get install -y {{ item }}"

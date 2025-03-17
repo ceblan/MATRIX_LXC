@@ -45,5 +45,28 @@
           - htop
           - socat
           - python3-pip
+          - make
+          - gcc
+          - libglib2.0-dev
+          - bash-completion
+          - libssl-dev
+          - libpq-dev
+          - libsqlite3-dev
+          - libjpeg-dev
+          - libpng-dev
+          - libcurl4-openssl-dev
+          - liblivemedia-dev
+          - libavcodec-dev
+          - libavformat-dev
+          - libswscale-dev
+          - g++
+          - libmodbus-dev
+          - libgtop2-dev
+          - libgtk-3-dev
+          - libhiredis-dev
+          - libjansson-dev
+          - libjson-glib-dev
+          - json-glib-tools
+          - gawk
         state: present
         install_recommends: no
