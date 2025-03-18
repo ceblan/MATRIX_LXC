@@ -4,7 +4,7 @@
 :GPTEL_BACKEND: ChatGPT
 :GPTEL_SYSTEM: You are a large language model living in Emacs and a helpful assistant. Respond concisely.
 :GPTEL_BOUNDS: ((633 . 973) (989 . 1106) (1121 . 1214) (1229 . 1230) (1332 . 1388) (1403 . 1414) (1468 . 1495) (1510 . 1774) (1789 . 1845) (1933 . 2169) (2562 . 2564) (2644 . 2746) (2761 . 2762) (2767 . 2775) (2776 . 2952) (3093 . 3226) (6959 . 6985) (6990 . 6991) (6992 . 6993) (6996 . 7049) (7054 . 7055) (7059 . 7111) (7116 . 7117) (7121 . 7144) (7180 . 7200) (7214 . 7215) (7229 . 7233))
-:LXC_NAME: POLLAS
+:LXC_NAME: POLLAS++
 :OUT_DIR: ansible/tasks/
 :END:
 
