@@ -540,105 +540,94 @@ host *tsc-host-1*, performing all the tasks you've outlined:
 Instalation of Package requirements
 
 #+begin_src yaml :tangle ansible/tasks/install-packages-TRAEFIK.yml
-  ---
-  - name: Set up TRAEFIK packages
-    hosts: TRAEFIK # here should be tsc-host-1 instead
-    become_method: sudo
-    become: true
-    #vars_prompt:
-      #- name: "ansible_become_pass"
-        #prompt: "Enter your sudo password in remote server"
-        #private: yes
+---
+- name: Set up TRAEFIK packages
+  hosts: TRAEFIK # here should be tsc-host-1 instead
+  become_method: sudo
+  become: true
+  vars_files:
+    - vars.yml
+
+  #vars_prompt:
+    #- name: "ansible_become_pass"
+      #prompt: "Enter your sudo password in remote server"
+      #private: yes
 
 
-    tasks:
-      # - name: apt update
-      #   become: yes
-      #   command: apt update
+  tasks:
+    # - name: apt update
+    #   become: yes
+    #   command: apt update
 
-      - name: avoid tshark config to block installation #esto es para que no pregunte lo del setuid y se bloquee
-        become: yes
-        shell: echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+    - name: avoid tshark config to block installation #esto es para que no pregunte lo del setuid y se bloquee
+      become: yes
+      shell: echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
 
-      - name: Set APT to not install recommended packages
-        copy:
-          dest: /etc/apt/apt.conf.d/01norecommend
-          content: |
-            APT::Install-Recommends "0";
-            APT::Install-Suggests "0";
+    - name: Set APT to not install recommended packages
+      copy:
+        dest: /etc/apt/apt.conf.d/01norecommend
+        content: |
+          APT::Install-Recommends "0";
+          APT::Install-Suggests "0";
 
-      - name: Update APT package index
-        apt:
-          update_cache: yes
+    - name: Update APT package index
+      apt:
+        update_cache: yes
 
-      - name: Install required packages
-        become: yes
-        become_method: sudo
-        apt:
-          name:
-            - vim
-            - gawk
-          state: present
-          install_recommends: no
+    - name: Install required packages
+      become: yes
+      become_method: sudo
+      apt:
+        name:
+          - vim
+          - gawk
+        state: present
+        install_recommends: no
 
-      - name: Actualizar el índice de paquetes apt
-        apt:
-          update_cache: yes
-          cache_valid_time: 3600  # 1 hora
+    - name: Actualizar el índice de paquetes apt
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600  # 1 hora
 
-      - name: Instalar dependencias para usar repositorios HTTPS and gpg
-        apt:
-          name: apt-transport-https, ca-certificates, curl, software-properties-common, gpg
-          state: present
+    - name: Instalar dependencias para usar repositorios HTTPS and gpg
+      apt:
+        name: apt-transport-https, ca-certificates, curl, software-properties-common, gpg
+        state: present
 
-      - name: Descargar la clave GPG de Docker
-        get_url:
-          url: https://download.docker.com/linux/debian/gpg
-          dest: /etc/apt/keyrings/docker-archive-keyring.asc # Download to a temporary location
-          mode: '0644'
-          force: yes
+    - name: Añadir repositorio de Docker para Debian
+      become: yes
+      command: cp data/docker.list /etc/apt/sources.list.d//
 
-      # - name: Exportar la clave GPG de Docker a formato keyring
-      #   command: gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg /etc/apt/keyrings/docker-archive-keyring.asc
-      #   args:
-      #     creates: /etc/apt/keyrings/docker-archive-keyring.gpg
-      - name: Añadir repositorio de Docker para Debian
-        become: yes
-        command: cp data/docker.list /etc/apt/sources.list.d/
+    - name: Ejecutar script de fuentes docker
+      become: true
+      command: /home/{{lxc_username}}/data/docker-apt-sources.sh
 
-      - name: Añadir repositorio de Docker para Debian
-        command: echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" >> /etc/apt/sources.list.d/docker.list
+    - name: Actualizar el índice de paquetes apt
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600  # 1 hora
 
-      - name: Actualizar el índice de paquetes apt (de nuevo, después de añadir el repo de Docker)
-        command: apt update
+    - name: Instalar Docker CE
+      apt:
+        name: docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin, docker-compose-plugin
+        state: present
 
-      - name: Actualizar el índice de paquetes apt (de nuevo, después de añadir el repo de Docker)
-        apt:
-          update_cache: yes
-          cache_valid_time: 3600
+    - name: Asegurarse de que el servicio de Docker está iniciado y habilitado
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
 
+    - name: Añadir usuario actual al grupo docker (para no necesitar sudo para comandos docker)
+      user:
+        name: "{{ lxc_username }}" # Usuario que ejecuta Ansible
+        groups: docker
+        append: yes
+      become: true # Necesario para modificar grupos de usuario
+      become_user: root #  Ejecutar como root para modificar grupos, incluso si ansible corre como otro usuario
 
-      - name: Instalar Docker CE
-        apt:
-          name: docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-          state: present
-
-      - name: Asegurarse de que el servicio de Docker está iniciado y habilitado
-        systemd:
-          name: docker
-          state: started
-          enabled: yes
-
-      - name: Añadir usuario actual al grupo docker (para no necesitar sudo para comandos docker)
-        user:
-          name: "{{ ansible_user_id }}" # Usuario que ejecuta Ansible
-          groups: docker
-          append: yes
-        become: true # Necesario para modificar grupos de usuario
-        become_user: root #  Ejecutar como root para modificar grupos, incluso si ansible corre como otro usuario
-
-      - name: Re-login del usuario (para que los cambios de grupo surtan efecto)
-        meta: reset_connection # Fuerza a Ansible a reconectar para reflejar los cambios de grupo
+    - name: Re-login del usuario (para que los cambios de grupo surtan efecto)
+      meta: reset_connection # Fuerza a Ansible a reconectar para reflejar los cambios de grupo
 #+end_src
 
 ***** Notes:
