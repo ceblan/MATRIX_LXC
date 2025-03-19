@@ -73,36 +73,33 @@
 
 
       - name: Check if {{ DEST }} container exists
-        command: lxc-ls | grep {{ DEST }}
+        command: lxc-ls -f | grep {{ DEST }}
         register: tsc_exists
         ignore_errors: yes
 
-      # - name: Output inventory sources
-      #   debug:
-      #     var: hostvars[inventory_hostname]['ansible_inventory_sources']
-
-      # - name: Output tsc_exists
-      #   debug:
-      #     var: tsc_exists
-
-      - name: Check if {{ DEST }} container exists
-        command: lxc-ls --fancy
-        register: lxc_list
+      - name: Variable tsc_exists
+        debug:
+          msg: "{{ tsc_exists }}"
 
       - name: Check if {{ DEST }} container is running
-        command: lxc-ls --running | grep {{ DEST }}
+        command: lxc-ls -f --running | grep {{ DEST }}
         register: container_status
         ignore_errors: yes
         when: tsc_exists.rc == 0
 
-      # - name: Output value of container_status
-      #   debug:
-      #     var: container_status
+     - name: Output value of container_status
+       debug:
+         var: container_status
 
       - name: Stop {{ DEST }} container if it is running
         command: lxc-stop -n {{ DEST }}
         ignore_errors: yes
         when: container_status.stdout != "" and  DEST in container_status.stdout_lines
+
+      - name: Pause for 5 seconds
+        wait_for:
+          delay: 1
+          timeout: 5
 
       - name: Destroy {{ DEST }} container if it exists
         command: lxc-destroy -n {{ DEST }}
@@ -222,7 +219,7 @@
 
       - name: chown git-carlos
         command: lxc-attach -n {{ DEST }} -- chown -R {{ lxc_username }}:{{ lxc_username }} /home/{{ lxc_username }}/git-carlos
-        
+
       - name: create data
         command: lxc-attach -n {{ DEST }} -- mkdir -p /home/{{ lxc_username }}/data
 
