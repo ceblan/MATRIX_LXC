@@ -123,7 +123,7 @@ host *tsc-host-1*, performing all the tasks you've outlined:
 
 ---
     - name: Set up LXC container for a MATRIX
-      hosts: pindaro # here should be tsc-host-1 instead
+      hosts: urganda # here should be tsc-host-1 instead
       become: yes
       vars_files:
         - vars.yml
@@ -132,7 +132,7 @@ host *tsc-host-1*, performing all the tasks you've outlined:
 
       tasks:
         - name: Install LXC
-          dnf:
+          apt:
             name: lxc
             state: present
             update_cache: yes
