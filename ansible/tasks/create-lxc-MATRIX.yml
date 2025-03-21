@@ -93,7 +93,7 @@
     - name: Stop {{ DEST }} container if it is running
       command: lxc-stop -n {{ DEST }}
       ignore_errors: yes
-      when: container_status.stdout_lines | select("search", DEST ~"  RUNNING")
+      when: container_status.stdout_lines | select("search", DEST ~"   RUNNING")
 
     - name: Pause for 5 seconds
       wait_for:
@@ -202,7 +202,7 @@
       command: lxc-attach -n {{ DEST }} -- sh -c "echo 'root:finiquito' | chpasswd"
 
     - name: Create user {{ lxc_username }}
-      command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1001 {{ lxc_username }}
+      command: lxc-attach -n {{ DEST }} -- adduser --disabled-password --gecos "" --uid 1015 {{ lxc_username }}
 
     - name: Create group inside container (GID 300)
       command: lxc-attach -n {{ DEST }} -- bash -c "groupadd -g 300 devpl"
