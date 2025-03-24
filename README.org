@@ -596,11 +596,11 @@ Instalation of Package requirements
 
     - name: Añadir repositorio de Docker para Debian
       become: yes
-      command: cp data/docker.list /etc/apt/sources.list.d//
+      command: cp data/lxc-helper-file/docker.list /etc/apt/sources.list.d//
 
     - name: Ejecutar script de fuentes docker
       become: true
-      command: /home/{{lxc_username}}/data/docker-apt-sources.sh
+      command: /home/{{lxc_username}}/data/lxc-helper-file/docker-apt-sources.sh
 
     - name: Actualizar el índice de paquetes apt
       apt:
