@@ -302,7 +302,7 @@
     - name: Let data be mounted in the LXC container
       lineinfile:
         path: "/var/lib/lxc/{{ DEST }}/config"
-        line: "lxc.mount.entry = /home/{{ lxc_username }}/data/Traefik_LXC home/{{ lxc_username }}/data none bind 0 0"
+        line: "lxc.mount.entry = /home/{{ lxc_username }}/data/MATRIX_LXC home/{{ lxc_username }}/data none bind 0 0"
         state: present
 
     - name: Add mount entry to git-hub
